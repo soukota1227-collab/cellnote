@@ -1083,12 +1083,17 @@ function App() {
   const todayStr=today();
 
   // ── 認証状態の監視 ──
+  const userRef=React.useRef(null);
+  const fbLoadedRef=React.useRef(false);
+  const isSyncingFromFb=React.useRef(false);
+
   useEffect(()=>{
     const unsub=fbAuth.onAuthStateChanged(u=>{
+      userRef.current=u;
       setUser(u);
-      if(!u){ setFbLoaded(false); return; }
-      // Firebase からデータを読み込む
+      if(!u){setFbLoaded(false);fbLoadedRef.current=false;return;}
       fbRef(u.uid,"data").once("value").then(snap=>{
+        isSyncingFromFb.current=true;
         const d=snap.val();
         if(d){
           if(d.groups)   setGroups(objToArr(d.groups));
@@ -1100,15 +1105,19 @@ function App() {
           if(d.dishes)   setDishes(d.dishes);
           if(d.protos)   setProtos(d.protos);
         } else {
-          // 初回: デフォルトデータを保存
           setGroups(DEF_GROUPS);
         }
-        setFbLoaded(true);
+        setTimeout(()=>{
+          fbLoadedRef.current=true;
+          setFbLoaded(true);
+          isSyncingFromFb.current=false;
+        },200);
       });
-      // リアルタイム同期（他端末の変更を受け取る）
       fbRef(u.uid,"data").on("value",snap=>{
+        if(!fbLoadedRef.current) return;
         const d=snap.val();
         if(!d) return;
+        isSyncingFromFb.current=true;
         if(d.groups)   setGroups(objToArr(d.groups));
         if(d.archived) setArchived(objToArr(d.archived));
         if(d.cells)    setCells(d.cells);
@@ -1117,22 +1126,26 @@ function App() {
         if(d.temps)    setTemps(d.temps);
         if(d.dishes)   setDishes(d.dishes);
         if(d.protos)   setProtos(d.protos);
+        setTimeout(()=>{isSyncingFromFb.current=false;},200);
       });
     });
-    return ()=>{ unsub(); if(user) fbRef(user.uid,"data").off(); };
+    return()=>{unsub();};
   },[]);
 
-  // ── Firebase へ保存するユーティリティ ──
+  // ── Firebase へ保存 ──
   const saveToFb=(patch)=>{
-    if(!user) return;
+    const u=userRef.current;
+    if(!u||!fbLoadedRef.current||isSyncingFromFb.current) return;
     setSyncing(true);
-    fbRef(user.uid,"data").update(patch).then(()=>setSyncing(false)).catch(()=>setSyncing(false));
+    fbRef(u.uid,"data").update(patch)
+      .then(()=>setSyncing(false))
+      .catch(e=>{console.error("FB save error:",e);setSyncing(false);});
   };
 
-  // ── 各 state 変更時に Firebase へ同期 ──
-  useEffect(()=>{ if(user&&fbLoaded) saveToFb({groups:groups.reduce((a,g,i)=>({...a,[g.id]:g}),{})}); },[groups]);
-  useEffect(()=>{ if(user&&fbLoaded) saveToFb({archived:archived.reduce((a,g)=>({...a,[g.id]:g}),{})}); },[archived]);
-  useEffect(()=>{ if(user&&fbLoaded) saveToFb({cells,medias,co2s,temps,dishes,protos}); },[cells,medias,co2s,temps,dishes,protos]);
+  // ── state変更時にFirebaseへ同期 ──
+  useEffect(()=>{if(fbLoaded) saveToFb({groups:groups.reduce((a,g)=>({...a,[g.id]:g}),{})});},[groups]);
+  useEffect(()=>{if(fbLoaded) saveToFb({archived:archived.reduce((a,g)=>({...a,[g.id]:g}),{})});},[archived]);
+  useEffect(()=>{if(fbLoaded) saveToFb({cells,medias,co2s,temps,dishes,protos});},[cells,medias,co2s,temps,dishes,protos]);
 
   const opts={cells,medias,co2s,temps,dishes,protos};
   const setters={cells:setCells,medias:setMedias,co2s:setCo2s,temps:setTemps,dishes:setDishes,protos:setProtos};
