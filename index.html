@@ -1186,26 +1186,33 @@ function App() {
 
   const allAlerts=useMemo(()=>{
     const list=[];
+    if(!Array.isArray(groups)) return list;
     groups.forEach(g=>{
-      if(g.protocol==="継代"&&addDays(g.startDate.slice(0,10),1)===todayStr)
-        list.push({key:`media-${g.id}`,type:"blue",icon:"💧",msg:<><strong>{g.cellLine} {g.passage||""}</strong> — 継代翌日です。培地交換を忘れずに！</>});
-      const lat=[...(g.observations||[])].sort((a,b)=>b.date.localeCompare(a.date))[0];
-      if(lat&&lat.confluence>=60)
-        list.push({key:`pass-${g.id}-${lat.confluence}`,type:"amber",icon:"🔁",msg:<><strong>{g.cellLine} {g.passage||""}</strong> — コンフルエンス <strong>{lat.confluence}%</strong>。継代を検討してください。</>});
-      if(lat&&lat.status==="bad")
-        list.push({key:`bad-${g.id}`,type:"red",icon:"❗",msg:<><strong>{g.cellLine} {g.passage||""}</strong> — 最新観察が「要確認」状態です。</>});
+      if(!g) return;
+      try{
+        if(g.protocol==="継代"&&g.startDate&&addDays(g.startDate.slice(0,10),1)===todayStr)
+          list.push({key:`media-${g.id}`,type:"blue",icon:"💧",msg:`${g.cellLine||""} ${g.passage||""} — 継代翌日です。培地交換を忘れずに！`});
+        const obs=Array.isArray(g.observations)?g.observations:[];
+        const lat=[...obs].sort((a,b)=>b.date.localeCompare(a.date))[0];
+        if(lat&&lat.confluence>=60)
+          list.push({key:`pass-${g.id}-${lat.confluence}`,type:"amber",icon:"🔁",msg:`${g.cellLine||""} ${g.passage||""} — コンフルエンス ${lat.confluence}%。継代を検討してください。`});
+        if(lat&&lat.status==="bad")
+          list.push({key:`bad-${g.id}`,type:"red",icon:"❗",msg:`${g.cellLine||""} ${g.passage||""} — 最新観察が「要確認」状態です。`});
+      }catch(e){}
     });
     return list;
   },[groups,todayStr]);
 
   const visibleAlerts=allAlerts.filter(a=>!dismissed.has(a.key));
-  const dismissAlert=key=>setDismissed(p=>new Set([...p,key]));
+  const dismissAlert=key=>setDismissed(p=>new Set([...(p||new Set()),key]));
 
+  const safeGroups=Array.isArray(groups)?groups:[];
+  const safeArchived=Array.isArray(archived)?archived:[];
   const stats={
-    total:groups.length,
-    active:groups.filter(g=>latestStatus(g)==="good").length,
-    caution:groups.filter(g=>latestStatus(g)==="warn").length,
-    check:groups.filter(g=>latestStatus(g)==="bad").length,
+    total:safeGroups.length,
+    active:safeGroups.filter(g=>latestStatus(g)==="good").length,
+    caution:safeGroups.filter(g=>latestStatus(g)==="warn").length,
+    check:safeGroups.filter(g=>latestStatus(g)==="bad").length,
   };
 
   const updateGroup=g=>{
@@ -1403,7 +1410,7 @@ function App() {
             {visibleAlerts.map(a=>(
               <div key={a.key} className={"al al-"+a.type}>
                 <span className="al-icon">{a.icon}</span>
-                <span className="al-body">{a.msg}</span>
+                <span className="al-body" style={{fontSize:12.5,color:"var(--ink)"}}>{a.msg}</span>
                 <button className="al-close" onClick={()=>dismissAlert(a.key)}>✕</button>
               </div>
             ))}
