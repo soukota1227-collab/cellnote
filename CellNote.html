@@ -1,0 +1,1507 @@
+<!DOCTYPE html>
+<html lang="ja">
+<head>
+<meta charset="UTF-8"/>
+<meta name="viewport" content="width=device-width,initial-scale=1"/>
+<title>CellNote.lab</title>
+<!-- Firebase SDK -->
+<script src="https://www.gstatic.com/firebasejs/10.12.0/firebase-app-compat.js"></script>
+<script src="https://www.gstatic.com/firebasejs/10.12.0/firebase-auth-compat.js"></script>
+<script src="https://www.gstatic.com/firebasejs/10.12.0/firebase-database-compat.js"></script>
+<script>
+const firebaseConfig = {
+  apiKey: "AIzaSyDs-gvYNXky8AV_E9mJSWwYcSOIbLBCx-U",
+  authDomain: "cellnote-3af06.firebaseapp.com",
+  databaseURL: "https://cellnote-3af06-default-rtdb.asia-southeast1.firebasedatabase.app",
+  projectId: "cellnote-3af06",
+  storageBucket: "cellnote-3af06.firebasestorage.app",
+  messagingSenderId: "75566949044",
+  appId: "1:75566949044:web:1a9ae702ca205411c66de1"
+};
+firebase.initializeApp(firebaseConfig);
+const fbAuth = firebase.auth();
+const fbDb   = firebase.database();
+</script>
+<script src="https://cdnjs.cloudflare.com/ajax/libs/react/18.2.0/umd/react.production.min.js"></script>
+<script src="https://cdnjs.cloudflare.com/ajax/libs/react-dom/18.2.0/umd/react-dom.production.min.js"></script>
+<script src="https://cdnjs.cloudflare.com/ajax/libs/babel-standalone/7.23.2/babel.min.js"></script>
+<link href="https://fonts.googleapis.com/css2?family=Kaisei+Tokumin:wght@400;700;800&family=DM+Mono:wght@300;400;500&family=Noto+Sans+JP:wght@300;400;500;600&display=swap" rel="stylesheet"/>
+<style>
+*,*::before,*::after{box-sizing:border-box;margin:0;padding:0}
+:root{
+  --bg:#f5f3ee;--bg2:#edeae2;--surface:#fff;--surface2:#f9f7f3;
+  --border:#e2ddd5;--border2:#ccc7bc;
+  --ink:#1a1814;--ink2:#5a5650;--ink3:#9a958e;
+  --green:#1a7a4a;--green-bg:#edf7f1;--green-bd:#b2dfc5;
+  --amber:#b45309;--amber-bg:#fffbeb;--amber-bd:#fcd34d;
+  --red:#c0392b;--red-bg:#fef2f2;--red-bd:#fca5a5;
+  --blue:#1d4ed8;--blue-bg:#eff6ff;--blue-bd:#bfdbfe;
+  --teal:#0f766e;--teal-bg:#f0fdfa;--teal-bd:#99f6e4;
+  --purple:#7e22ce;--purple-bg:#fdf4ff;--purple-bd:#e9d5ff;
+  --rose:#be185d;--rose-bg:#fff1f2;--rose-bd:#fecdd3;
+  --fh:'Kaisei Tokumin',serif;--fm:'DM Mono',monospace;--fb:'Noto Sans JP',sans-serif;
+  --r:10px;--rs:6px;
+  --sh:0 1px 3px rgba(0,0,0,.08),0 1px 2px rgba(0,0,0,.04);
+  --sh2:0 4px 16px rgba(0,0,0,.10);
+  --sb-w:232px;
+}
+html,body,#root{height:100%;background:var(--bg);color:var(--ink);font-family:var(--fb)}
+::-webkit-scrollbar{width:5px;height:5px}
+::-webkit-scrollbar-track{background:transparent}
+::-webkit-scrollbar-thumb{background:var(--border2);border-radius:4px}
+
+/* ── layout ── */
+.shell{display:grid;grid-template-columns:var(--sb-w) 1fr;grid-template-rows:52px 1fr;height:100vh;overflow:hidden;transition:grid-template-columns .22s ease}
+.shell.collapsed{grid-template-columns:0px 1fr}
+.shell.collapsed .sb{width:0;min-width:0;overflow:hidden;padding:0;border:none}
+
+/* ── topbar ── */
+.tb{grid-column:1/-1;display:flex;align-items:center;gap:10px;padding:0 16px;
+    background:var(--surface);border-bottom:1px solid var(--border);box-shadow:var(--sh);z-index:20}
+.tb-toggle{background:none;border:1px solid var(--border);border-radius:var(--rs);
+  width:28px;height:28px;cursor:pointer;color:var(--ink3);font-size:14px;
+  display:flex;align-items:center;justify-content:center;flex-shrink:0;transition:all .15s}
+.tb-toggle:hover{background:var(--bg2);color:var(--ink)}
+.tb-logo{font-family:var(--fh);font-size:17px;font-weight:800;color:var(--green);letter-spacing:-.3px}
+.tb-logo span{color:var(--ink3);font-weight:400;font-size:13px;margin-left:4px}
+.tb-sp{flex:1}
+.tb-chip{font-family:var(--fm);font-size:10px;padding:3px 10px;border-radius:20px;
+         background:var(--green-bg);color:var(--green);border:1px solid var(--green-bd)}
+
+/* ── sidebar ── */
+.sb{background:var(--surface);border-right:1px solid var(--border);overflow:hidden;
+    display:flex;flex-direction:column;transition:all .22s ease}
+.sb-inner{overflow-y:auto;flex:1;padding:12px 0;min-width:var(--sb-w)}
+.shell.collapsed .sb-inner{display:none}
+.sb-sec{padding:0 8px;margin-bottom:18px}
+.sb-sec-hd{display:flex;align-items:center;justify-content:space-between;
+  padding:0 8px;margin-bottom:4px;cursor:pointer;user-select:none}
+.sb-lbl{font-family:var(--fm);font-size:9px;letter-spacing:2px;text-transform:uppercase;color:var(--ink3)}
+.sb-sec-toggle{background:none;border:none;cursor:pointer;color:var(--ink3);font-size:10px;padding:2px 4px;border-radius:3px}
+.sb-sec-toggle:hover{color:var(--ink);background:var(--bg2)}
+.sb-btn{display:flex;align-items:center;gap:8px;padding:6px 10px;border-radius:var(--rs);
+         cursor:pointer;font-size:12.5px;color:var(--ink2);background:transparent;
+         border:none;width:100%;text-align:left;transition:all .15s;font-family:var(--fb)}
+.sb-btn:hover{background:var(--bg2);color:var(--ink)}
+.sb-btn.act{background:var(--green-bg);color:var(--green);font-weight:600}
+.sb-cnt{margin-left:auto;font-family:var(--fm);font-size:10px;color:var(--ink3);
+         background:var(--bg2);padding:1px 6px;border-radius:10px;flex-shrink:0}
+.sb-dot{width:7px;height:7px;border-radius:50%;flex-shrink:0}
+.sb-divider{height:1px;background:var(--border);margin:4px 10px 10px}
+/* cell-line row */
+.sb-cl-row{display:flex;align-items:center;border-radius:var(--rs);transition:background .15s}
+.sb-cl-row:hover{background:var(--bg2)}
+.sb-cl-row.act{background:var(--green-bg)}
+.sb-cl-btn{display:flex;align-items:center;gap:8px;padding:6px 8px;cursor:pointer;
+            font-size:12.5px;color:var(--ink2);background:transparent;border:none;
+            flex:1;text-align:left;font-family:var(--fb);min-width:0;overflow:hidden}
+.sb-cl-row.act .sb-cl-btn{color:var(--green);font-weight:600}
+.sb-cl-name{overflow:hidden;text-overflow:ellipsis;white-space:nowrap}
+.sb-cl-del{background:none;border:none;cursor:pointer;color:var(--ink3);padding:3px 6px;
+            font-size:11px;flex-shrink:0;border-radius:4px;transition:all .15s}
+.sb-cl-del:hover{color:var(--red);background:var(--red-bg)}
+
+/* ── main ── */
+.main{overflow-y:auto;display:flex;flex-direction:column;background:var(--bg)}
+.ph{padding:22px 28px 0;display:flex;align-items:flex-start;justify-content:space-between;flex-wrap:wrap;gap:12px}
+.ph-title{font-family:var(--fh);font-size:22px;font-weight:700}
+.ph-sub{font-family:var(--fm);font-size:10px;color:var(--ink3);margin-top:3px}
+
+/* ── alerts ── */
+.al-list{padding:10px 28px 0;display:flex;flex-direction:column;gap:7px}
+.al{display:flex;align-items:flex-start;gap:10px;padding:9px 14px;border-radius:var(--r);
+    border-left:3px solid;line-height:1.5;animation:fadeSlide .3s ease}
+.al-amber{background:var(--amber-bg);border-color:var(--amber)}
+.al-red  {background:var(--red-bg);  border-color:var(--red)}
+.al-blue {background:var(--blue-bg); border-color:var(--blue)}
+.al-icon{font-size:14px;flex-shrink:0;margin-top:1px}
+.al-body{flex:1;font-size:12px;color:var(--ink)}
+.al-body strong{color:inherit}
+.al-close{background:none;border:none;cursor:pointer;color:var(--ink3);font-size:13px;padding:1px 4px;border-radius:4px;transition:all .15s;flex-shrink:0}
+.al-close:hover{background:rgba(0,0,0,.07);color:var(--ink)}
+
+/* ── stats ── */
+.stats{display:grid;grid-template-columns:repeat(4,1fr);gap:10px;padding:14px 28px}
+.sc{background:var(--surface);border:1px solid var(--border);border-radius:var(--r);
+     padding:12px 16px;box-shadow:var(--sh);position:relative;overflow:hidden}
+.sc::after{content:'';position:absolute;bottom:0;left:0;right:0;height:3px}
+.sc.g::after{background:var(--green)}.sc.a::after{background:var(--amber)}
+.sc.r::after{background:var(--red)}.sc.b::after{background:var(--blue)}
+.sc-lbl{font-family:var(--fm);font-size:9px;letter-spacing:1.5px;text-transform:uppercase;color:var(--ink3)}
+.sc-val{font-family:var(--fh);font-size:24px;font-weight:800;margin-top:3px;line-height:1}
+.sc.g .sc-val{color:var(--green)}.sc.a .sc-val{color:var(--amber)}
+.sc.r .sc-val{color:var(--red)}.sc.b .sc-val{color:var(--blue)}
+.sc-sub{font-size:10px;color:var(--ink3);margin-top:3px}
+
+/* ── entry card ── */
+.ca{padding:0 28px 32px}
+.sec-hd{display:flex;align-items:center;justify-content:space-between;margin-bottom:10px}
+.sec-t{font-family:var(--fm);font-size:10px;letter-spacing:1.5px;text-transform:uppercase;color:var(--ink3)}
+.ec{background:var(--surface);border:1px solid var(--border);border-radius:var(--r);
+     box-shadow:var(--sh);margin-bottom:8px;overflow:hidden;transition:all .18s}
+.ec:hover{box-shadow:var(--sh2);border-color:var(--border2)}
+.ec.open{border-color:var(--green-bd)}
+.ec.archived{opacity:.7;border-color:var(--border);border-style:dashed}
+.ec-top{display:grid;grid-template-columns:60px 1fr auto;gap:12px;align-items:start;
+         padding:13px 15px;cursor:pointer}
+.ec-date{display:flex;flex-direction:column;align-items:center;gap:1px}
+.ec-day{font-family:var(--fh);font-size:20px;font-weight:800;line-height:1;color:var(--ink2)}
+.ec-mon{font-family:var(--fm);font-size:9px;letter-spacing:1px;text-transform:uppercase;color:var(--ink3)}
+.ec-time{font-family:var(--fm);font-size:10px;color:var(--ink3)}
+.ec-title{font-size:14px;font-weight:700;color:var(--ink);line-height:1.2;
+  display:flex;align-items:baseline;gap:8px;flex-wrap:wrap}
+.ec-cell{font-family:var(--fh);font-size:15px;font-weight:700;color:var(--ink)}
+.ec-passage{font-family:var(--fm);font-size:13px;color:var(--green);font-weight:500;
+  background:var(--green-bg);border:1.5px solid var(--green-bd);border-radius:8px;
+  padding:2px 10px;white-space:nowrap;letter-spacing:.3px}
+.ec-meta{font-size:11px;color:var(--ink3);margin-top:2px;font-family:var(--fm)}
+.ec-tags{display:flex;gap:5px;flex-wrap:wrap;margin-top:5px}
+.tag{font-family:var(--fm);font-size:10px;padding:2px 7px;border-radius:12px;border:1px solid}
+.tag-g{background:var(--green-bg);color:var(--green);border-color:var(--green-bd)}
+.tag-a{background:var(--amber-bg);color:var(--amber);border-color:var(--amber-bd)}
+.tag-b{background:var(--blue-bg);color:var(--blue);border-color:var(--blue-bd)}
+.tag-t{background:var(--teal-bg);color:var(--teal);border-color:var(--teal-bd)}
+.tag-n{background:var(--bg2);color:var(--ink3);border-color:var(--border)}
+.tag-p{background:var(--purple-bg);color:var(--purple);border-color:var(--purple-bd)}
+.tag-r{background:var(--rose-bg);color:var(--rose);border-color:var(--rose-bd)}
+.ec-right{display:flex;flex-direction:column;align-items:flex-end;gap:4px;min-width:120px}
+.st-dot{width:9px;height:9px;border-radius:50%}
+.st-g{background:var(--green);box-shadow:0 0 5px rgba(26,122,74,.4)}
+.st-a{background:var(--amber);box-shadow:0 0 5px rgba(180,83,9,.4)}
+.st-r{background:var(--red);box-shadow:0 0 5px rgba(192,57,43,.4)}
+.conf-pill{font-family:var(--fm);font-size:11px;padding:2px 8px;border-radius:12px;display:inline-block}
+.conf-hi{background:var(--amber-bg);color:var(--amber);border:1px solid var(--amber-bd)}
+.conf-ok{background:var(--green-bg);color:var(--green);border:1px solid var(--green-bd)}
+.badge-ps{font-family:var(--fm);font-size:10px;color:var(--amber);background:var(--amber-bg);border:1px solid var(--amber-bd);border-radius:12px;padding:2px 8px;white-space:nowrap}
+.badge-md{font-family:var(--fm);font-size:10px;color:var(--blue);background:var(--blue-bg);border:1px solid var(--blue-bd);border-radius:12px;padding:2px 8px;white-space:nowrap}
+.badge-arch{font-family:var(--fm);font-size:10px;color:var(--ink3);background:var(--bg2);border:1px solid var(--border);border-radius:12px;padding:2px 8px;white-space:nowrap}
+.ec-actions{display:flex;gap:4px;margin-top:2px;flex-wrap:wrap;justify-content:flex-end}
+
+/* ── sublog ── */
+.sublog{border-top:1px solid var(--border);background:var(--surface2)}
+.sublog-inner{padding:10px 14px 12px 72px}
+.obs-row{display:flex;align-items:flex-start;gap:10px;padding:8px 0;border-bottom:1px dashed var(--border)}
+.obs-row:last-of-type{border-bottom:none}
+.obs-date-col{display:flex;flex-direction:column;min-width:72px;flex-shrink:0}
+.obs-date-main{font-family:var(--fm);font-size:10px;color:var(--ink3)}
+.obs-date-elapsed{font-family:var(--fm);font-size:9px;color:var(--ink3);opacity:.7;margin-top:1px}
+.obs-body{flex:1;min-width:0}
+.obs-inline{display:flex;align-items:center;gap:6px;flex-wrap:wrap}
+.obs-note{font-size:12px;color:var(--ink2);margin-top:4px;line-height:1.6}
+.obs-act{display:flex;gap:4px;flex-shrink:0}
+.icon-btn{background:none;border:1px solid var(--border);border-radius:var(--rs);
+           padding:3px 8px;font-size:11px;cursor:pointer;color:var(--ink3);transition:all .15s;font-family:var(--fb)}
+.icon-btn:hover{background:var(--bg2);color:var(--ink)}
+.icon-btn.danger:hover{background:var(--red-bg);color:var(--red);border-color:var(--red-bd)}
+.add-obs-btn{display:flex;align-items:center;gap:5px;font-size:12px;color:var(--green);
+              background:none;border:1px dashed var(--green-bd);border-radius:var(--rs);
+              padding:5px 12px;cursor:pointer;margin-top:8px;transition:all .15s;font-family:var(--fb)}
+.add-obs-btn:hover{background:var(--green-bg)}
+.obs-form{background:var(--green-bg);border:1px solid var(--green-bd);border-radius:var(--rs);padding:12px 14px;margin-top:8px}
+
+/* ── conf gauge ── */
+.cg{display:flex;align-items:center;gap:8px}
+.cg-bar{width:80px;height:5px;background:var(--bg2);border-radius:3px;overflow:hidden;flex-shrink:0}
+.cg-fill{height:100%;border-radius:3px;transition:width .3s}
+
+/* ── elapsed ── */
+.elapsed-wrap{display:flex;align-items:center;gap:8px;margin-top:4px}
+.elapsed-bar-bg{flex:1;height:5px;background:var(--bg2);border-radius:3px;overflow:hidden;min-width:50px;max-width:100px}
+.elapsed-bar-fill{height:100%;border-radius:3px;transition:width .4s}
+.elapsed-label{font-family:var(--fm);font-size:10px;white-space:nowrap;padding:2px 7px;border-radius:12px;border:1px solid}
+.el-g{background:var(--green-bg);color:var(--green);border-color:var(--green-bd)}
+.el-a{background:var(--amber-bg);color:var(--amber);border-color:var(--amber-bd)}
+.el-r{background:var(--red-bg);color:var(--red);border-color:var(--red-bd)}
+.el-b{background:var(--blue-bg);color:var(--blue);border-color:var(--blue-bd)}
+
+/* ── buttons ── */
+.btn{display:inline-flex;align-items:center;gap:5px;padding:7px 14px;border-radius:var(--rs);
+      font-size:12.5px;font-family:var(--fb);font-weight:600;cursor:pointer;border:none;transition:all .15s}
+.btn-p{background:var(--green);color:#fff}.btn-p:hover{background:#15643c}
+.btn-g{background:var(--surface);color:var(--ink2);border:1px solid var(--border2)}.btn-g:hover{background:var(--bg2)}
+.btn-amber{background:var(--amber-bg);color:var(--amber);border:1px solid var(--amber-bd)}.btn-amber:hover{background:var(--amber);color:#fff}
+.btn-sm{padding:4px 10px;font-size:11.5px}
+.btn-xs{padding:3px 8px;font-size:11px}
+
+/* ── modal ── */
+.mb{position:fixed;inset:0;background:rgba(0,0,0,.35);backdrop-filter:blur(3px);
+     z-index:50;display:flex;align-items:center;justify-content:center;animation:fadeIn .15s ease}
+.mo{background:var(--surface);border:1px solid var(--border);border-radius:14px;
+     width:640px;max-height:92vh;overflow-y:auto;padding:28px;position:relative;
+     box-shadow:var(--sh2);animation:scIn .18s ease}
+.mo-sm{width:440px}
+.mo-title{font-family:var(--fh);font-size:18px;font-weight:700;margin-bottom:20px;color:var(--ink)}
+.mo-close{position:absolute;top:16px;right:16px;background:var(--bg2);border:1px solid var(--border);
+           color:var(--ink3);width:28px;height:28px;border-radius:6px;cursor:pointer;
+           font-size:15px;display:flex;align-items:center;justify-content:center}
+
+/* ── form ── */
+.fg{margin-bottom:14px}
+.fl{font-family:var(--fm);font-size:10px;letter-spacing:1.5px;text-transform:uppercase;
+     color:var(--ink3);margin-bottom:6px;display:block}
+.fi,.fta{width:100%;background:var(--surface2);border:1.5px solid var(--border);
+          border-radius:var(--rs);color:var(--ink);padding:9px 11px;font-size:13px;
+          font-family:var(--fb);outline:none;transition:border-color .15s}
+.fi:focus,.fta:focus{border-color:var(--green)}
+.fta{resize:vertical;min-height:60px}
+.fr{display:grid;grid-template-columns:1fr 1fr;gap:12px}
+.fac{display:flex;justify-content:flex-end;gap:8px;margin-top:14px;border-top:1px solid var(--border);padding-top:12px}
+.fsep{border-top:1px solid var(--border);padding-top:12px;margin-top:4px;margin-bottom:4px}
+.fsep-lbl{font-family:var(--fm);font-size:10px;letter-spacing:1.5px;text-transform:uppercase;color:var(--ink3);margin-bottom:10px}
+
+/* ── SelectPicker ── */
+.sp-wrap{display:flex;flex-wrap:wrap;gap:5px;align-items:center}
+.sp-btn{padding:5px 12px;border-radius:var(--rs);border:1.5px solid var(--border);
+         font-size:12px;font-family:var(--fb);cursor:pointer;background:var(--surface2);
+         color:var(--ink2);transition:all .15s;white-space:nowrap;line-height:1.3}
+.sp-btn:hover{border-color:var(--green-bd);color:var(--green);background:var(--green-bg)}
+.sp-btn.sel{border-color:var(--green);background:var(--green-bg);color:var(--green);font-weight:600}
+.sp-add{padding:5px 10px;border-radius:var(--rs);border:1.5px dashed var(--green-bd);
+         font-size:12px;font-family:var(--fb);cursor:pointer;background:transparent;
+         color:var(--green);transition:all .15s;white-space:nowrap}
+.sp-add:hover{background:var(--green-bg)}
+.sp-icon-btn{width:26px;height:26px;border-radius:var(--rs);border:1.5px solid var(--border2);
+  font-size:12px;cursor:pointer;transition:all .15s;display:inline-flex;
+  align-items:center;justify-content:center;flex-shrink:0;background:transparent}
+.sp-icon-btn:hover{background:var(--bg2) !important;color:var(--ink) !important}
+.sp-inp-row{display:flex;gap:6px;margin-top:7px;width:100%}
+.sp-sort-item{display:inline-flex;align-items:center;gap:2px;flex-shrink:0}
+.sp-sort-arrow{background:none;border:1px solid var(--border2);border-radius:4px;
+  cursor:pointer;color:var(--ink3);font-size:11px;padding:1px 4px;line-height:1;transition:all .15s}
+.sp-sort-arrow:hover{background:var(--bg2);color:var(--ink)}
+.sp-sort-arrow:disabled{opacity:.2;cursor:default}
+
+/* proto tag color by index */
+.pt-colored{font-weight:500}
+
+/* ── edit panel ── */
+.ep{border-top:1px solid var(--border);padding:16px;background:var(--surface2)}
+.ep-title{font-family:var(--fh);font-weight:700;font-size:14px;margin-bottom:12px;color:var(--ink)}
+
+/* ── chip manager ── */
+.cl-list{display:flex;flex-wrap:wrap;gap:6px;margin-bottom:10px}
+.cl-chip{display:flex;align-items:center;gap:5px;background:var(--bg2);border:1px solid var(--border);border-radius:20px;padding:4px 10px;font-size:12px}
+.cl-del{background:none;border:none;color:var(--ink3);cursor:pointer;font-size:12px;padding:0;line-height:1}
+.cl-del:hover{color:var(--red)}
+.cl-add{display:flex;gap:6px}
+
+/* ── seed info grid ── */
+.ec-seed-grid{display:grid;grid-template-columns:repeat(3,1fr);gap:6px;margin-top:5px}
+.ec-seed-item{background:var(--surface2);border:1px solid var(--border);border-radius:var(--rs);padding:5px 9px}
+.ec-seed-label{font-family:var(--fm);font-size:9px;letter-spacing:1px;text-transform:uppercase;color:var(--ink3);display:block;margin-bottom:2px}
+.ec-seed-val{font-size:12px;color:var(--ink);font-weight:500;line-height:1.3}
+/* ── condition accordion ── */
+.ec-cond-toggle{display:inline-flex;align-items:center;gap:4px;background:none;border:none;
+  cursor:pointer;font-family:var(--fm);font-size:9px;letter-spacing:1px;text-transform:uppercase;
+  color:var(--ink3);padding:0;margin-top:5px;transition:color .15s}
+.ec-cond-toggle:hover{color:var(--ink2)}
+.ec-cond-body{margin-top:5px;display:flex;gap:5px;flex-wrap:wrap}
+
+/* ── sort/filter bar ── */
+.ctrl-bar{display:flex;align-items:center;flex-wrap:wrap;gap:8px;
+  padding:12px 28px 0;font-size:12px}
+.ctrl-group{display:flex;align-items:center;gap:5px}
+.ctrl-lbl{font-family:var(--fm);font-size:9px;letter-spacing:1.5px;text-transform:uppercase;
+  color:var(--ink3);white-space:nowrap}
+.ctrl-sel{background:var(--surface);border:1.5px solid var(--border);border-radius:var(--rs);
+  color:var(--ink);padding:5px 9px;font-size:12px;font-family:var(--fb);outline:none;cursor:pointer;
+  transition:border-color .15s}
+.ctrl-sel:focus{border-color:var(--green)}
+.ctrl-dir{display:flex;border:1.5px solid var(--border);border-radius:var(--rs);overflow:hidden}
+.ctrl-dir button{background:var(--surface);border:none;padding:5px 10px;font-size:11px;
+  cursor:pointer;color:var(--ink3);font-family:var(--fm);transition:all .15s;white-space:nowrap}
+.ctrl-dir button:first-child{border-right:1px solid var(--border)}
+.ctrl-dir button.act{background:var(--green-bg);color:var(--green)}
+.ctrl-dir button:hover:not(.act){background:var(--bg2);color:var(--ink)}
+.ctrl-sep{width:1px;height:20px;background:var(--border);margin:0 4px}
+
+/* ── prefix input ── */
+.prefix-wrap{display:flex;align-items:center;border:1.5px solid var(--border);border-radius:var(--rs);
+  overflow:hidden;background:var(--surface2);transition:border-color .15s}
+.prefix-wrap:focus-within{border-color:var(--green)}
+.prefix-label{padding:0 10px;font-family:var(--fm);font-size:13px;color:var(--ink3);
+  background:var(--bg2);border-right:1px solid var(--border);white-space:nowrap;
+  display:flex;align-items:center;height:100%;align-self:stretch}
+.prefix-input{flex:1;border:none;background:transparent;color:var(--ink);
+  padding:9px 11px;font-size:13px;font-family:var(--fm);outline:none}
+/* seed exponent picker */
+.exp-wrap{display:flex;align-items:center;gap:4px;margin-top:6px;flex-wrap:wrap}
+.exp-label{font-family:var(--fm);font-size:10px;color:var(--ink3);white-space:nowrap}
+
+/* ── login screen ── */
+.login-wrap{position:fixed;inset:0;background:var(--bg);display:flex;align-items:center;justify-content:center;z-index:100}
+.login-card{background:var(--surface);border:1px solid var(--border);border-radius:16px;padding:36px 32px;
+  width:340px;box-shadow:var(--sh2)}
+.login-logo{font-family:var(--fh);font-size:22px;font-weight:800;color:var(--green);text-align:center;margin-bottom:6px}
+.login-sub{font-family:var(--fm);font-size:10px;color:var(--ink3);text-align:center;margin-bottom:28px;letter-spacing:1px}
+.login-err{font-size:12px;color:var(--red);background:var(--red-bg);border:1px solid var(--red-bd);
+  border-radius:var(--rs);padding:8px 12px;margin-bottom:12px;text-align:center}
+.login-btn{width:100%;padding:11px;border-radius:var(--rs);background:var(--green);color:#fff;
+  border:none;font-size:14px;font-family:var(--fb);font-weight:600;cursor:pointer;margin-top:6px;transition:background .15s}
+.login-btn:hover{background:#15643c}
+.login-btn:disabled{opacity:.5;cursor:default}
+.sync-dot{width:8px;height:8px;border-radius:50%;display:inline-block;margin-right:5px}
+.sync-ok{background:var(--green)}
+.sync-ing{background:var(--amber);animation:pulse 1s infinite}
+@keyframes pulse{0%,100%{opacity:1}50%{opacity:.4}}
+
+/* ── misc ── */
+.empty{text-align:center;padding:40px 20px;color:var(--ink3)}
+.empty-icon{font-size:32px;opacity:.35;margin-bottom:8px}
+.empty-t{font-family:var(--fm);font-size:12px}
+.hint{font-size:11px;color:var(--ink3);margin-top:4px}
+.notes-box{font-size:12px;color:var(--ink2);background:var(--surface2);border:1px solid var(--border);
+  border-radius:var(--rs);padding:8px 12px;margin-top:6px;line-height:1.7;white-space:pre-wrap}
+
+@keyframes fadeIn   {from{opacity:0}to{opacity:1}}
+@keyframes scIn     {from{transform:scale(.95);opacity:0}to{transform:scale(1);opacity:1}}
+@keyframes fadeSlide{from{opacity:0;transform:translateY(-4px)}to{opacity:1;transform:translateY(0)}}
+</style>
+</head>
+<body><div id="root"></div>
+<script type="text/babel">
+const {useState,useMemo,useEffect} = React;
+
+/* ── localStorage ── */
+const LS={groups:'cn_groups',archived:'cn_archived',cells:'cn_cells',medias:'cn_medias',
+          co2s:'cn_co2s',temps:'cn_temps',dishes:'cn_dishes',protos:'cn_protos'};
+const lsGet=(k,fb)=>{try{const v=localStorage.getItem(k);return v?JSON.parse(v):fb}catch{return fb}};
+const lsSet=(k,v)=>{try{localStorage.setItem(k,JSON.stringify(v))}catch{}};
+
+// Firebase helpers
+const fbRef=(uid,key)=>fbDb.ref(`users/${uid}/${key}`);
+const fbSave=(uid,key,val)=>fbRef(uid,key).set(val);
+const objToArr=(obj)=>obj?Object.values(obj):[];
+
+/* ── helpers ── */
+const pad2=n=>String(n).padStart(2,"0");
+const nowDT=()=>{const d=new Date();return `${d.getFullYear()}-${pad2(d.getMonth()+1)}-${pad2(d.getDate())}T${pad2(d.getHours())}:00`;};
+const today=()=>nowDT().slice(0,10);
+const addDays=(s,n)=>{const d=new Date(s);d.setDate(d.getDate()+n);return d.toISOString().slice(0,10);};
+const fmtDT=s=>{
+  if(!s) return{day:"",mon:"",time:"",full:"",hasTime:false};
+  const d=new Date(s);
+  const hasTime=s.includes("T");
+  return{
+    day:d.getDate(),
+    mon:d.toLocaleDateString("en",{month:"short"}),
+    time:hasTime?`${pad2(d.getHours())}:00`:"",
+    full:d.toLocaleDateString("ja-JP",{month:"long",day:"numeric"}),
+    hasTime,
+  };
+};
+/* "2025-04-22T10:00" から経過時間 */
+const calcElapsed=s=>{
+  if(!s) return null;
+  const start=new Date(s);
+  if(isNaN(start.getTime())) return null;
+  const ms=Date.now()-start.getTime();
+  if(ms<0) return{label:"開始前",cls:"el-b",pct:0};
+  const totalH=ms/3600000;
+  const d=Math.floor(totalH/24);
+  const h=Math.floor(totalH%24);
+  let label,cls,pct;
+  if(totalH<24)      {label=`${Math.floor(totalH)}h 経過`;cls="el-g";pct=Math.min(totalH/24*100,100);}
+  else if(totalH<72) {label=`${d}日${h}h 経過`;cls="el-g";pct=Math.min(totalH/72*100,100);}
+  else if(totalH<168){label=`${d}日${h}h 経過`;cls="el-a";pct=Math.min(totalH/168*100,100);}
+  else               {label=`${d}日${h}h 経過`;cls="el-r";pct:100;}
+  return{totalH,d,h,label,cls,pct:pct??100};
+};
+/* 開始時刻から観察時刻までの経過 */
+const diffLabel=(start,obs)=>{
+  if(!start||!obs) return "";
+  const ms=new Date(obs)-new Date(start);
+  if(ms<0) return "";
+  const totalH=ms/3600000;
+  const d=Math.floor(totalH/24);
+  const h=Math.floor(totalH%24);
+  if(d===0&&h===0) return "0h";
+  if(d===0) return `+${h}h`;
+  return `+${d}日${h}h`;
+};
+const uid=()=>Math.random().toString(36).slice(2,9);
+// plateCount の合計（数値部分のみ抽出して加算）
+const sumPlate=list=>list.reduce((acc,g)=>{
+  const n=parseFloat((g.plateCount||"").replace(/[^0-9.]/g,""));
+  return acc+(isNaN(n)?0:n);
+},0);
+
+// 全角→半角変換（数字・英字・記号・スペース）
+const toHalf=s=>{
+  if(!s) return s;
+  return String(s)
+    .replace(/[Ａ-Ｚａ-ｚ０-９]/g,ch=>String.fromCharCode(ch.charCodeAt(0)-0xFEE0))
+    .replace(/　/g," ")
+    .replace(/．/g,".").replace(/，/g,",");
+};
+// onBlur用ハンドラ生成: フォーカスを外したときだけ変換する
+const makeHalfBlur=(val,setter)=>()=>setter(toHalf(val));
+
+/* プロトコルタグカラー: indexに基づき色をローテーション */
+const PROTO_COLORS=[
+  {bg:"var(--purple-bg)",color:"var(--purple)",bd:"var(--purple-bd)"},
+  {bg:"var(--blue-bg)",  color:"var(--blue)",  bd:"var(--blue-bd)"},
+  {bg:"var(--teal-bg)",  color:"var(--teal)",  bd:"var(--teal-bd)"},
+  {bg:"var(--rose-bg)",  color:"var(--rose)",  bd:"var(--rose-bd)"},
+  {bg:"var(--amber-bg)", color:"var(--amber)", bd:"var(--amber-bd)"},
+  {bg:"var(--green-bg)", color:"var(--green)", bd:"var(--green-bd)"},
+];
+const FIXED_PROTO_COLORS={"継代":{bg:"var(--purple-bg)",color:"var(--purple)",bd:"var(--purple-bd)"},
+  "培地交換":{bg:"var(--blue-bg)",color:"var(--blue)",bd:"var(--blue-bd)"},
+  "観察のみ":{bg:"var(--teal-bg)",color:"var(--teal)",bd:"var(--teal-bd)"},
+  "凍結保存":{bg:"var(--rose-bg)",color:"var(--rose)",bd:"var(--rose-bd)"},
+  "融解":{bg:"var(--amber-bg)",color:"var(--amber)",bd:"var(--amber-bd)"},
+};
+const getProtoColor=(proto,protos)=>{
+  if(FIXED_PROTO_COLORS[proto]) return FIXED_PROTO_COLORS[proto];
+  const idx=protos.indexOf(proto);
+  return PROTO_COLORS[((idx<0?0:idx))%PROTO_COLORS.length];
+};
+
+/* ── defaults ── */
+const DEF_CELLS  = ["201B7 (iPSC)","KhES-1 (hESC)","253G1 (iPSC)"];
+const DEF_PROTOS = ["継代","培地交換","観察のみ","凍結保存","融解","神経分化","心筋分化","肝細胞分化","その他"];
+const DEF_MEDIAS = ["StemFit AK02N","mTeSR Plus","mTeSR1","TeSR-E8","RPMI+B27 w/o ins","N2B27","CryoStor CS10","その他"];
+const DEF_CO2S   = ["5%","5.5%","6%"];
+const DEF_TEMPS  = ["37°C","36.5°C","38°C"];
+const DEF_DISHES = ["6-well plate","12-well plate","24-well plate","60mm dish","100mm dish","Matrigel coat dish","低接着プレート","iMatrix-511 6-well"];
+const FREEZE_PROTOS_ONLY = ["凍結保存"];
+const FREEZE_PROTOS = ["凍結保存","融解"];
+const isFreezeProto = p => !!(p&&p.includes("凍結"));
+
+const DEF_GROUPS=[
+  {id:"g1",cellLine:"201B7 (iPSC)",passage:"P32",startDate:"2025-04-22T10:00",
+   protocol:"継代",media:"StemFit AK02N",co2:"5%",temp:"37°C",dish:"6-well plate",
+   seedCoef:"3.0",seedExp:"4",seedUnit:"cells/dish",mediaVol:"2",mediaVolUnit:"mL",plateCount:"1",plateUnit:"枚",notes:"",
+   observations:[
+     {id:"o1a",date:"2025-04-22T10:00",protocol:"継代",confluence:15,note:"継代直後。コロニー形成開始。",status:"good"},
+     {id:"o1b",date:"2025-04-23T10:00",protocol:"培地交換",confluence:30,note:"培地交換。形態良好。",status:"good"},
+     {id:"o1c",date:"2025-04-24T10:00",protocol:"観察のみ",confluence:55,note:"増殖順調。コロニーエッジ鮮明。",status:"good"},
+   ]},
+  {id:"g2",cellLine:"KhES-1 (hESC)",passage:"P18",startDate:"2025-04-18T09:00",
+   protocol:"継代",media:"mTeSR Plus",co2:"5%",temp:"37°C",dish:"Matrigel coat dish",
+   seedCoef:"",seedExp:"4",seedUnit:"cells/dish",mediaVol:"2",mediaVolUnit:"mL",plateCount:"2",plateUnit:"枚",notes:"",
+   observations:[
+     {id:"o2a",date:"2025-04-18T09:00",protocol:"継代",confluence:20,note:"継代。均一に播種。",status:"good"},
+     {id:"o2b",date:"2025-04-19T09:00",protocol:"培地交換",confluence:38,note:"順調。",status:"good"},
+     {id:"o2c",date:"2025-04-20T09:00",protocol:"観察のみ",confluence:60,note:"コロニー密度増加。",status:"warn"},
+   ]},
+  {id:"g3",cellLine:"201B7 (iPSC)",passage:"P30",startDate:"2025-04-10T14:00",
+   protocol:"心筋分化",media:"RPMI+B27 w/o ins",co2:"5%",temp:"37°C",dish:"12-well plate",notes:"CHIR99021 12µM 処理",
+   observations:[
+     {id:"o3a",date:"2025-04-10T14:00",protocol:"心筋分化",confluence:90,note:"CHIR処理開始。W3,W5剥離→除外。",status:"bad"},
+     {id:"o3b",date:"2025-04-12T14:00",protocol:"観察のみ",confluence:88,note:"D2: 有効ウェル4/6。",status:"warn"},
+     {id:"o3c",date:"2025-04-15T14:00",protocol:"観察のみ",confluence:92,note:"D5: 拍動開始の兆候あり。",status:"good"},
+   ]},
+];
+
+/* ════════ LoginScreen ════════ */
+function LoginScreen({onLogin}) {
+  const [email,setEmail]=useState("");
+  const [pass, setPass] =useState("");
+  const [err,  setErr]  =useState("");
+  const [loading,setLoading]=useState(false);
+
+  const login=async()=>{
+    if(!email||!pass) return;
+    setLoading(true); setErr("");
+    try{
+      await fbAuth.signInWithEmailAndPassword(email,pass);
+    }catch(e){
+      setErr("メールアドレスまたはパスワードが違います");
+      setLoading(false);
+    }
+  };
+
+  return(
+    <div className="login-wrap">
+      <div className="login-card">
+        <div className="login-logo">CellNote.lab</div>
+        <div className="login-sub">iPS / ES CELL CULTURE LOG</div>
+        {err&&<div className="login-err">{err}</div>}
+        <div className="fg"><label className="fl">メールアドレス</label>
+          <input className="fi" type="email" value={email} onChange={e=>setEmail(e.target.value)}
+            onKeyDown={e=>e.key==="Enter"&&login()} placeholder="example@email.com" autoComplete="email"/></div>
+        <div className="fg"><label className="fl">パスワード</label>
+          <input className="fi" type="password" value={pass} onChange={e=>setPass(e.target.value)}
+            onKeyDown={e=>e.key==="Enter"&&login()} placeholder="••••••••" autoComplete="current-password"/></div>
+        <button className="login-btn" onClick={login} disabled={loading}>
+          {loading?"ログイン中...":"ログイン"}
+        </button>
+      </div>
+    </div>
+  );
+}
+
+/* ════════ SelectPicker ════════ */
+function SelectPicker({value,onChange,options,onAddOpt,onDelOpt,onReplaceOpts,protos=null}) {
+  const [mode,setMode]=useState("normal");
+  const [adding,setAdding]=useState(false);
+  const [inp,setInp]=useState("");
+  const all=(value&&!options.includes(value))?[...options,value]:options;
+  const enterMode=m=>{setMode(p=>p===m?"normal":m);setAdding(false);};
+  const commitAdd=()=>{const v=inp.trim();if(!v)return;onAddOpt(v);onChange(v);setInp("");setAdding(false);};
+  const handleDel=o=>{if(value===o)onChange("");onDelOpt(o);};
+  const move=(o,dir)=>{const i=options.indexOf(o);if(i<0)return;const n=i+dir;if(n<0||n>=options.length)return;const a=[...options];[a[i],a[n]]=[a[n],a[i]];onReplaceOpts(a);};
+
+  const renderBtn=(o)=>{
+    const pcol = protos ? getProtoColor(o,protos) : null;
+    return(
+      <div key={o} style={{position:"relative",display:"inline-flex",flexShrink:0}}>
+        <button type="button"
+          className={"sp-btn"+(value===o?" sel":"")}
+          style={pcol&&value!==o?{background:pcol.bg,color:pcol.color,borderColor:pcol.bd}:
+                 mode==="del"?{paddingRight:"18px"}:{}}
+          onClick={()=>{if(mode==="normal")onChange(o);}}>
+          {o}
+        </button>
+        {mode==="del"&&(
+          <button type="button" onClick={()=>handleDel(o)}
+            style={{position:"absolute",top:"-5px",right:"-5px",width:"15px",height:"15px",
+              borderRadius:"50%",background:"var(--red)",color:"#fff",border:"none",cursor:"pointer",
+              fontSize:"8px",display:"flex",alignItems:"center",justifyContent:"center",fontWeight:700}}>✕</button>
+        )}
+      </div>
+    );
+  };
+
+  return(
+    <div>
+      <div className="sp-wrap">
+        {mode==="sort"
+          ?options.map((o,i)=>(
+            <div key={o} className="sp-sort-item">
+              <button type="button" className="sp-sort-arrow" disabled={i===0} onClick={()=>move(o,-1)}>‹</button>
+              <span className={"sp-btn"+(value===o?" sel":"")} style={{cursor:"default",userSelect:"none"}}>{o}</span>
+              <button type="button" className="sp-sort-arrow" disabled={i===options.length-1} onClick={()=>move(o,1)}>›</button>
+            </div>
+          ))
+          :all.map(o=>renderBtn(o))
+        }
+        {mode!=="sort"&&<button type="button" className="sp-add" onClick={()=>{setAdding(p=>!p);setMode("normal");}}>＋</button>}
+        <button type="button" className="sp-icon-btn" title="削除" onClick={()=>enterMode("del")}
+          style={{background:mode==="del"?"var(--red-bg)":"transparent",color:mode==="del"?"var(--red)":"var(--ink3)",borderColor:mode==="del"?"var(--red-bd)":"var(--border2)"}}>✕</button>
+        <button type="button" className="sp-icon-btn" title="並び替え" onClick={()=>enterMode("sort")}
+          style={{background:mode==="sort"?"var(--blue-bg)":"transparent",color:mode==="sort"?"var(--blue)":"var(--ink3)",borderColor:mode==="sort"?"var(--blue-bd)":"var(--border2)"}}>⇄</button>
+      </div>
+      {adding&&(
+        <div className="sp-inp-row">
+          <input className="fi" style={{flex:1}} value={inp} onChange={e=>setInp(e.target.value)}
+            placeholder="新しい選択肢を入力" onKeyDown={e=>e.key==="Enter"&&commitAdd()}/>
+          <button className="btn btn-p btn-xs" onClick={commitAdd}>追加</button>
+          <button className="btn btn-g btn-xs" onClick={()=>{setAdding(false);setInp("");}}>×</button>
+        </div>
+      )}
+    </div>
+  );
+}
+
+/* ════════ ConfBar ════════ */
+function ConfBar({val}) {
+  const c=val>=80?"var(--red)":val>=60?"var(--amber)":"var(--green)";
+  return(
+    <div className="cg">
+      <div className="cg-bar"><div className="cg-fill" style={{width:`${val}%`,background:c}}/></div>
+      <span className={"conf-pill "+(val>=60?"conf-hi":"conf-ok")}>{val}%</span>
+    </div>
+  );
+}
+
+/* ════════ ElapsedBar ════════ */
+function ElapsedBar({startStr}) {
+  const [el,setEl]=useState(()=>calcElapsed(startStr));
+  useEffect(()=>{
+    setEl(calcElapsed(startStr));
+    const id=setInterval(()=>setEl(calcElapsed(startStr)),60000);
+    return()=>clearInterval(id);
+  },[startStr]);
+  if(!el) return null;
+  const barColor=el.cls==="el-g"?"var(--green)":el.cls==="el-a"?"var(--amber)":"var(--red)";
+  return(
+    <div className="elapsed-wrap">
+      <div className="elapsed-bar-bg"><div className="elapsed-bar-fill" style={{width:`${el.pct}%`,background:barColor}}/></div>
+      <span className={"elapsed-label "+el.cls}>{el.label}</span>
+    </div>
+  );
+}
+
+/* ════════ ProtoTag ════════ */
+function ProtoTag({proto,protos}) {
+  const c=getProtoColor(proto,protos);
+  return <span className="tag" style={{background:c.bg,color:c.color,borderColor:c.bd}}>{proto}</span>;
+}
+
+/* ════════ CellLineRow (sidebar) ════════ */
+function CellLineRow({name,active,count,onSelect,onDelete}) {
+  const [conf,setConf]=useState(false);
+  if(conf) return(
+    <div style={{margin:"2px 0",padding:"8px 10px",borderRadius:"var(--rs)",background:"var(--red-bg)",border:"1px solid var(--red-bd)",fontSize:12}}>
+      <div style={{color:"var(--red)",marginBottom:6,lineHeight:1.4}}>「{name}」を削除しますか？<br/><span style={{fontSize:11,color:"var(--ink3)"}}>この細胞株のグループも削除されます</span></div>
+      <div style={{display:"flex",gap:6}}>
+        <button onClick={()=>{onDelete();setConf(false);}} style={{flex:1,padding:"4px 0",borderRadius:"var(--rs)",border:"1px solid var(--red-bd)",background:"var(--red)",color:"#fff",cursor:"pointer",fontSize:11.5,fontFamily:"var(--fb)",fontWeight:600}}>削除</button>
+        <button onClick={()=>setConf(false)} style={{flex:1,padding:"4px 0",borderRadius:"var(--rs)",border:"1px solid var(--border2)",background:"var(--surface)",color:"var(--ink2)",cursor:"pointer",fontSize:11.5,fontFamily:"var(--fb)"}}>キャンセル</button>
+      </div>
+    </div>
+  );
+  return(
+    <div className={"sb-cl-row"+(active?" act":"")}>
+      <button className="sb-cl-btn" onClick={onSelect}>
+        <span className="sb-dot" style={{background:name.includes("iPSC")?"var(--green)":"var(--blue)",flexShrink:0}}/>
+        <span className="sb-cl-name">{name}</span>
+        <span className="sb-cnt">{count}</span>
+      </button>
+      <button className="sb-cl-del" onClick={e=>{e.stopPropagation();setConf(true);}}>✕</button>
+    </div>
+  );
+}
+
+/* ════════ ObsForm ════════ */
+function ObsForm({initial={},startDate,onSave,onCancel,opts,onAddOpt,onDelOpt,onReplaceOpts}) {
+  const [date,setDate]=useState(()=>initial.date||nowDT());
+  const [proto,setProto]=useState(initial.protocol||opts.protos[0]||"");
+  const [conf,setConf]=useState(initial.confluence!=null?initial.confluence:"");
+  const [note,setNote]=useState(initial.note||"");
+  const [st,setSt]=useState(initial.status||"good");
+  const handleDate=e=>{const v=e.target.value;setDate(v.length>=13?v.slice(0,13)+":00":v);};
+  return(
+    <div className="obs-form">
+      <div className="fr" style={{marginBottom:10}}>
+        <div><label className="fl">観察日時</label>
+          <input className="fi" type="datetime-local" step="3600" value={date} onChange={handleDate}/></div>
+        <div><label className="fl">コンフルエンス (%)</label>
+          <input className="fi" type="number" min="0" max="100" value={conf} onChange={e=>setConf(e.target.value)} onBlur={e=>setConf(toHalf(e.target.value))} placeholder="50"/></div>
+      </div>
+      <div style={{marginBottom:10}}><label className="fl">プロトコル</label>
+        <SelectPicker value={proto} onChange={setProto} options={opts.protos}
+          onAddOpt={v=>onAddOpt("protos",v)} onDelOpt={v=>onDelOpt("protos",v)}
+          onReplaceOpts={arr=>onReplaceOpts("protos",arr)} protos={opts.protos}/>
+      </div>
+      <div style={{marginBottom:10}}><label className="fl">ステータス</label>
+        <div className="sp-wrap">
+          {[{v:"good",l:"正常"},{v:"warn",l:"注意"},{v:"bad",l:"要確認"}].map(x=>(
+            <button key={x.v} type="button" className={"sp-btn"+(st===x.v?" sel":"")} onClick={()=>setSt(x.v)}>{x.l}</button>
+          ))}
+        </div>
+      </div>
+      <div style={{marginBottom:10}}><label className="fl">観察メモ</label>
+        <textarea className="fta" rows={2} value={note} onChange={e=>setNote(e.target.value)} onBlur={e=>setNote(toHalf(e.target.value))} placeholder="形態、特記事項など"/></div>
+      <div style={{display:"flex",gap:6,justifyContent:"flex-end"}}>
+        <button className="btn btn-g btn-xs" onClick={onCancel}>キャンセル</button>
+        <button className="btn btn-p btn-xs" onClick={()=>onSave({id:initial.id||uid(),date,protocol:proto,confluence:Number(conf)||0,note,status:st})}>保存</button>
+      </div>
+    </div>
+  );
+}
+
+/* ════════ GroupFields ════════ */
+function GroupFields({f,set,opts,onAddOpt,onDelOpt,onReplaceOpts,showCell=false}) {
+  return(
+    <>
+      {showCell&&(
+        <div className="fg"><label className="fl">細胞株 *</label>
+          <SelectPicker value={f.cellLine} onChange={v=>set("cellLine",v)} options={opts.cells}
+            onAddOpt={v=>onAddOpt("cells",v)} onDelOpt={v=>onDelOpt("cells",v)} onReplaceOpts={arr=>onReplaceOpts("cells",arr)}/></div>
+      )}
+      <div className="fr">
+        <div className="fg"><label className="fl">継代数</label>
+          <div className="prefix-wrap">
+            <span className="prefix-label">P</span>
+            <input className="prefix-input" type="number" min="0" max="999"
+              value={(f.passage||"").replace(/^P/i,"")}
+              onChange={e=>{const v=e.target.value.replace(/[^0-9]/g,"");set("passage",v?"P"+v:"");}}
+              placeholder="32"/>
+          </div>
+        </div>
+        <div className="fg"><label className="fl">開始日時</label>
+          <input className="fi" type="datetime-local" step="3600" value={f.startDate} onChange={e=>{const v=e.target.value;set("startDate",v.length>=13?v.slice(0,13)+":00":v);}}/></div>
+      </div>
+      <div className="fg"><label className="fl">プロトコル</label>
+        <SelectPicker value={f.protocol} onChange={v=>set("protocol",v)} options={opts.protos}
+          onAddOpt={v=>onAddOpt("protos",v)} onDelOpt={v=>onDelOpt("protos",v)} onReplaceOpts={arr=>onReplaceOpts("protos",arr)} protos={opts.protos}/></div>
+      {f.protocol!=="凍結保存"&&!f.protocol.includes("凍結")&&(
+        <div className="fg"><label className="fl">培地</label>
+          <SelectPicker value={f.media} onChange={v=>set("media",v)} options={opts.medias}
+            onAddOpt={v=>onAddOpt("medias",v)} onDelOpt={v=>onDelOpt("medias",v)} onReplaceOpts={arr=>onReplaceOpts("medias",arr)}/></div>
+      )}
+      {f.protocol!=="凍結保存"&&!f.protocol.includes("凍結")&&(
+        <div className="fg"><label className="fl">CO₂ 濃度</label>
+          <SelectPicker value={f.co2} onChange={v=>set("co2",v)} options={opts.co2s}
+            onAddOpt={v=>onAddOpt("co2s",v)} onDelOpt={v=>onDelOpt("co2s",v)} onReplaceOpts={arr=>onReplaceOpts("co2s",arr)}/></div>
+      )}
+      <div className="fg"><label className="fl">温度</label>
+        <SelectPicker value={f.temp} onChange={v=>set("temp",v)} options={opts.temps}
+          onAddOpt={v=>onAddOpt("temps",v)} onDelOpt={v=>onDelOpt("temps",v)} onReplaceOpts={arr=>onReplaceOpts("temps",arr)}/></div>
+      <div className="fg"><label className="fl">培養器</label>
+        <SelectPicker value={f.dish} onChange={v=>set("dish",v)} options={opts.dishes}
+          onAddOpt={v=>onAddOpt("dishes",v)} onDelOpt={v=>onDelOpt("dishes",v)} onReplaceOpts={arr=>onReplaceOpts("dishes",arr)}/></div>
+      {/* 播種数: 係数 × 10^n + 単位 */}
+      <div className="fg"><label className="fl">播種数</label>
+        <div style={{display:"flex",gap:6,alignItems:"center"}}>
+          <input className="fi" style={{width:80}} value={f.seedCoef||""} onChange={e=>set("seedCoef",e.target.value)} onBlur={e=>set("seedCoef",toHalf(e.target.value))} placeholder="2.0"/>
+          <span style={{fontFamily:"var(--fm)",fontSize:13,color:"var(--ink3)",whiteSpace:"nowrap"}}>× 10</span>
+          <div className="prefix-wrap" style={{width:70}}>
+            <span className="prefix-label">^</span>
+            <input className="prefix-input" type="number" min="1" max="9"
+              value={f.seedExp||""} onChange={e=>set("seedExp",e.target.value.replace(/[^0-9]/g,""))} placeholder="4"/>
+          </div>
+        </div>
+        <div className="exp-wrap" style={{marginTop:6}}>
+          <span className="exp-label">単位:</span>
+          {["cells/dish","cells/well","cells/tube"].map(u=>(
+            <button key={u} type="button" className={"sp-btn"+(f.seedUnit===u?" sel":"")} onClick={()=>set("seedUnit",u)}>{u}</button>
+          ))}
+        </div>
+      </div>
+      {/* 培地量: 凍結保存のときは非表示 */}
+      {f.protocol!=="凍結保存"&&!f.protocol.includes("凍結")&&(
+        <div className="fg"><label className="fl">培地量</label>
+          <div style={{display:"flex",gap:6}}>
+            <input className="fi" style={{flex:1}} value={f.mediaVol||""} onChange={e=>set("mediaVol",e.target.value)} onBlur={e=>set("mediaVol",toHalf(e.target.value))} placeholder="例: 2"/>
+            <div className="sp-wrap" style={{flexShrink:0}}>
+              {["mL","μL"].map(u=>(
+                <button key={u} type="button" className={"sp-btn"+(f.mediaVolUnit===u?" sel":"")} onClick={()=>set("mediaVolUnit",u)}>{u}</button>
+              ))}
+            </div>
+          </div>
+        </div>
+      )}
+      {/* 枚数: 数値 + 単位選択 */}
+      <div className="fg"><label className="fl">枚数 / ウェル数 / 本数</label>
+        <div style={{display:"flex",gap:6}}>
+          <input className="fi" style={{flex:1}} value={f.plateCount||""} onChange={e=>set("plateCount",e.target.value)} onBlur={e=>set("plateCount",toHalf(e.target.value))} placeholder="例: 2"/>
+          <div className="sp-wrap" style={{flexShrink:0}}>
+            {["枚","well","本"].map(u=>(
+              <button key={u} type="button" className={"sp-btn"+(f.plateUnit===u?" sel":"")} onClick={()=>set("plateUnit",u)}>{u}</button>
+            ))}
+          </div>
+        </div>
+      </div>
+      <div className="fg"><label className="fl">メモ</label>
+        <textarea className="fta" rows={2} value={f.notes} onChange={e=>set("notes",e.target.value)} onBlur={e=>set("notes",toHalf(e.target.value))} placeholder="特記事項など"/></div>
+    </>
+  );
+}
+
+/* ════════ GroupEditPanel ════════ */
+function GroupEditPanel({group,opts,onAddOpt,onDelOpt,onReplaceOpts,onSave,onCancel}) {
+  const [f,setF]=useState({...group});
+  const set=(k,v)=>setF(p=>({...p,[k]:v}));
+  return(
+    <div className="ep">
+      <div className="ep-title">グループ情報を編集</div>
+      <GroupFields f={f} set={set} opts={opts} onAddOpt={onAddOpt} onDelOpt={onDelOpt} onReplaceOpts={onReplaceOpts} showCell={true}/>
+      <div style={{display:"flex",gap:6,justifyContent:"flex-end"}}>
+        <button className="btn btn-g btn-sm" onClick={onCancel}>キャンセル</button>
+        <button className="btn btn-p btn-sm" onClick={()=>onSave(f)}>保存</button>
+      </div>
+    </div>
+  );
+}
+
+/* ════════ PassageGroup ════════ */
+function PassageGroup({group,todayStr,opts,onAddOpt,onDelOpt,onReplaceOpts,onUpdate,onDelete,onArchive,isArchived=false}) {
+  const [open,setOpen]=useState(false);
+  const [editG,setEditG]=useState(false);
+  const [addObs,setAddObs]=useState(false);
+  const [editObs,setEditObs]=useState(null);
+  const [confDel,setConfDel]=useState(false);
+  const [confArch,setConfArch]=useState(false);
+  const [condOpen,setCondOpen]=useState(false);
+
+  const sorted=[...group.observations].sort((a,b)=>a.date.localeCompare(b.date));
+  const latest=sorted[sorted.length-1];
+  const latConf=latest?.confluence??0;
+  const needMedia=!isArchived&&group.protocol==="継代"&&addDays(group.startDate.slice(0,10),1)===todayStr;
+  const needPass=!isArchived&&latConf>=60;
+  const fd=fmtDT(group.startDate);
+
+  const saveObs=obs=>{
+    const list=group.observations.some(o=>o.id===obs.id)
+      ?group.observations.map(o=>o.id===obs.id?obs:o)
+      :[...group.observations,obs];
+    onUpdate({...group,observations:list});
+    setAddObs(false);setEditObs(null);
+  };
+  const delObs=id=>onUpdate({...group,observations:group.observations.filter(o=>o.id!==id)});
+
+  return(
+    <div className={"ec"+(open?" open":"")+(isArchived?" archived":"")}>
+      <div className="ec-top" onClick={()=>{setOpen(p=>!p);if(editG)setEditG(false);}}>
+        <div className="ec-date">
+          <span className="ec-day">{fd.day}</span>
+          <span className="ec-mon">{fd.mon}</span>
+          {fd.hasTime&&<span className="ec-time">{fd.time}</span>}
+        </div>
+        <div>
+          <div className="ec-title">
+            <span className="ec-cell">{group.cellLine}</span>
+            {group.passage&&<span className="ec-passage">{group.passage}</span>}
+          </div>
+          {/* プロトコルタグ */}
+          <div className="ec-tags" style={{marginTop:4}}>
+            <ProtoTag proto={group.protocol} protos={opts.protos}/>
+            {group.notes&&<span className="ec-meta" style={{fontSize:11,color:"var(--ink3)",alignSelf:"center"}}>{group.notes.slice(0,40)}{group.notes.length>40?"…":""}</span>}
+          </div>
+
+          {/* 播種情報グリッド */}
+          {(group.seedCoef||group.mediaVol||group.plateCount)&&(
+            <div className="ec-seed-grid" style={{gridTemplateColumns:
+              [group.seedCoef,group.mediaVol,group.plateCount].filter(Boolean).length===1?"1fr":
+              [group.seedCoef,group.mediaVol,group.plateCount].filter(Boolean).length===2?"1fr 1fr":"repeat(3,1fr)"}}>
+              {group.seedCoef&&(
+                <div className="ec-seed-item">
+                  <span className="ec-seed-label">播種数</span>
+                  <span className="ec-seed-val">
+                    {group.seedCoef} × 10<sup>{group.seedExp||"4"}</sup>
+                    <span style={{fontSize:10,color:"var(--ink3)",marginLeft:3}}>{group.seedUnit||"cells/dish"}</span>
+                  </span>
+                </div>
+              )}
+              {group.mediaVol&&(
+                <div className="ec-seed-item">
+                  <span className="ec-seed-label">培地量</span>
+                  <span className="ec-seed-val">{group.mediaVol}<span style={{fontSize:10,color:"var(--ink3)",marginLeft:2}}>{group.mediaVolUnit||"mL"}</span></span>
+                </div>
+              )}
+              {group.plateCount&&(
+                <div className="ec-seed-item">
+                  <span className="ec-seed-label">枚数</span>
+                  <span className="ec-seed-val">{group.plateCount}<span style={{fontSize:10,color:"var(--ink3)",marginLeft:2}}>{group.plateUnit||"枚"}</span></span>
+                </div>
+              )}
+            </div>
+          )}
+
+          {/* 培養条件（折りたたみ）*/}
+          <button className="ec-cond-toggle" onClick={e=>{e.stopPropagation();setCondOpen(p=>!p);}}>
+            <span>{condOpen?"▲":"▼"}</span>培養条件
+          </button>
+          {condOpen&&(
+            <div className="ec-cond-body" onClick={e=>e.stopPropagation()}>
+              {group.media&&<span className="tag tag-t">{group.media}</span>}
+              {group.dish &&<span className="tag tag-n">{group.dish}</span>}
+              <span className="tag tag-n">CO₂ {group.co2}</span>
+              <span className="tag tag-n">{group.temp}</span>
+            </div>
+          )}
+
+          {(!isArchived||group.archiveType==="freeze")&&<ElapsedBar startStr={group.startDate}/>}
+          {isArchived&&<span className="badge-arch">{group.archiveType==="freeze"?"凍結済み":"継代済み"}</span>}
+        </div>
+        <div className="ec-right" onClick={e=>e.stopPropagation()}>
+          <div style={{display:"flex",alignItems:"center",gap:6}}>
+            <span className={"st-dot st-"+(latest?.status||"g")}/>
+            {latConf>0&&<ConfBar val={latConf}/>}
+          </div>
+          {needPass&&<span className="badge-ps">継代サイン</span>}
+          {needMedia&&<span className="badge-md">培地交換日</span>}
+          <div className="ec-actions">
+            <button className="icon-btn" onClick={()=>{setEditG(p=>!p);setOpen(true);}}>編集</button>
+            {!isArchived&&confArch&&<button className="icon-btn btn-amber btn-xs" onClick={()=>{onArchive(group.id,group.protocol);setConfArch(false);}}>{isFreezeProto(group.protocol)?"凍結済みにする":"継代済みにする"}</button>}
+            {!isArchived&&confArch&&<button className="icon-btn" onClick={()=>setConfArch(false)}>×</button>}
+            {!isArchived&&!confArch&&<button className="icon-btn" style={{color:"var(--amber)",borderColor:"var(--amber-bd)"}} onClick={()=>setConfArch(true)}>{isFreezeProto(group.protocol)?"凍結済み":"継代済み"}</button>}
+            {confDel&&<button className="icon-btn" style={{color:"var(--red)",borderColor:"var(--red-bd)",background:"var(--red-bg)"}} onClick={()=>onDelete(group.id)}>本当に削除</button>}
+            {confDel&&<button className="icon-btn" onClick={()=>setConfDel(false)}>×</button>}
+            {!confDel&&<button className="icon-btn danger" onClick={()=>setConfDel(true)}>削除</button>}
+          </div>
+        </div>
+      </div>
+
+      {editG&&
+        <GroupEditPanel group={group} opts={opts} onAddOpt={onAddOpt} onDelOpt={onDelOpt} onReplaceOpts={onReplaceOpts}
+          onSave={g=>{onUpdate(g);setEditG(false);}} onCancel={()=>setEditG(false)}/>}
+
+      {open&&(
+        <div className="sublog">
+          <div className="sublog-inner">
+            {sorted.length===0&&<div style={{fontSize:12,color:"var(--ink3)",padding:"4px 0"}}>観察記録なし</div>}
+            {sorted.map(obs=>{
+              const od=fmtDT(obs.date);
+              const dl=diffLabel(group.startDate,obs.date);
+              return(
+                <div className="obs-row" key={obs.id}>
+                  <div className="obs-date-col">
+                    <span className="obs-date-main">{od.full}{od.hasTime?` ${od.time}`:""}</span>
+                    {dl&&<span className="obs-date-elapsed">{dl}</span>}
+                  </div>
+                  <div className="obs-body">
+                    {editObs===obs.id
+                      ?<ObsForm initial={obs} startDate={group.startDate} onSave={saveObs} onCancel={()=>setEditObs(null)}
+                          opts={opts} onAddOpt={onAddOpt} onDelOpt={onDelOpt} onReplaceOpts={onReplaceOpts}/>
+                      :<>
+                        <div className="obs-inline">
+                          {obs.confluence>0&&<ConfBar val={obs.confluence}/>}
+                          {obs.protocol&&<ProtoTag proto={obs.protocol} protos={opts.protos}/>}
+                          <span className={"tag "+(obs.status==="good"?"tag-g":obs.status==="warn"?"tag-a":"tag-n")}>
+                            {obs.status==="good"?"正常":obs.status==="warn"?"注意":"要確認"}
+                          </span>
+                        </div>
+                        {obs.note&&<div className="obs-note">{obs.note}</div>}
+                      </>
+                    }
+                  </div>
+                  {editObs!==obs.id&&(
+                    <div className="obs-act">
+                      <button className="icon-btn" onClick={()=>setEditObs(obs.id)}>編集</button>
+                      <button className="icon-btn danger" onClick={()=>delObs(obs.id)}>削除</button>
+                    </div>
+                  )}
+                </div>
+              );
+            })}
+            {addObs
+              ?<ObsForm startDate={group.startDate} onSave={saveObs} onCancel={()=>setAddObs(false)}
+                  opts={opts} onAddOpt={onAddOpt} onDelOpt={onDelOpt} onReplaceOpts={onReplaceOpts}/>
+              :<button className="add-obs-btn" onClick={()=>setAddObs(true)}>＋ 観察記録を追加</button>
+            }
+          </div>
+        </div>
+      )}
+    </div>
+  );
+}
+
+/* ════════ NewGroupModal ════════ */
+function NewGroupModal({onClose,onSave,opts,onAddOpt,onDelOpt,onReplaceOpts}) {
+  const [f,setF]=useState({startDate:nowDT(),cellLine:opts.cells[0]||"",passage:"",
+    protocol:opts.protos[0]||"",media:opts.medias[0]||"",co2:opts.co2s[0]||"",
+    temp:opts.temps[0]||"",dish:opts.dishes[0]||"",
+    seedCoef:"",seedExp:"4",seedUnit:"cells/dish",mediaVol:"",mediaVolUnit:"mL",plateCount:"",plateUnit:"枚",notes:"",
+    initConf:"",initNote:"",initStatus:"good"});
+  const [err,setErr]=useState("");
+  const set=(k,v)=>{setErr("");setF(p=>({...p,[k]:v}));};
+  const save=()=>{
+    if(!f.cellLine.trim()){setErr("細胞株を選択または入力してください");return;}
+    const obs=f.initConf?[{id:uid(),date:f.startDate,protocol:f.protocol,confluence:Number(f.initConf)||0,note:f.initNote,status:f.initStatus}]:[];
+    onSave({id:uid(),cellLine:f.cellLine,passage:f.passage,startDate:f.startDate,
+             protocol:f.protocol,media:f.media,co2:f.co2,temp:f.temp,dish:f.dish,notes:f.notes,observations:obs});
+    onClose();
+  };
+  return(
+    <div className="mb" onClick={e=>e.target===e.currentTarget&&onClose()}>
+      <div className="mo">
+        <button className="mo-close" onClick={onClose}>✕</button>
+        <div className="mo-title">新規培養グループを作成</div>
+        <GroupFields f={f} set={set} opts={opts} onAddOpt={onAddOpt} onDelOpt={onDelOpt} onReplaceOpts={onReplaceOpts} showCell={true}/>
+        <div className="fsep">
+          <div className="fsep-lbl">初回観察記録（任意）</div>
+          <div className="fr">
+            <div className="fg"><label className="fl">コンフルエンス (%)</label>
+              <input className="fi" type="number" min="0" max="100" value={f.initConf} onChange={e=>set("initConf",e.target.value)} placeholder="15"/></div>
+            <div className="fg"><label className="fl">ステータス</label>
+              <div className="sp-wrap">
+                {[{v:"good",l:"正常"},{v:"warn",l:"注意"},{v:"bad",l:"要確認"}].map(x=>(
+                  <button key={x.v} type="button" className={"sp-btn"+(f.initStatus===x.v?" sel":"")} onClick={()=>set("initStatus",x.v)}>{x.l}</button>
+                ))}
+              </div>
+            </div>
+          </div>
+          <div className="fg"><label className="fl">観察メモ</label>
+            <textarea className="fta" rows={2} value={f.initNote} onChange={e=>set("initNote",e.target.value)} onBlur={e=>set("initNote",toHalf(e.target.value))} placeholder="初日の状態など"/></div>
+        </div>
+        <div className="fac">
+          {err&&<span style={{color:"var(--red)",fontSize:12,flex:1,alignSelf:"center"}}>{err}</span>}
+          <button className="btn btn-g" onClick={onClose}>キャンセル</button>
+          <button className="btn btn-p" onClick={save}>作成する</button>
+        </div>
+      </div>
+    </div>
+  );
+}
+
+/* ════════ CellLineModal ════════ */
+function CellLineModal({cells,onClose,onChange}) {
+  const [lines,setLines]=useState([...cells]);
+  const [inp,setInp]=useState("");
+  const add=()=>{const v=inp.trim();if(v&&!lines.includes(v)){setLines(p=>[...p,v]);setInp("");}};
+  return(
+    <div className="mb" onClick={e=>e.target===e.currentTarget&&onClose()}>
+      <div className="mo mo-sm">
+        <button className="mo-close" onClick={onClose}>✕</button>
+        <div className="mo-title">細胞株を管理</div>
+        <div className="cl-list">
+          {lines.map(c=>(
+            <div className="cl-chip" key={c}><span>{c}</span>
+              <button className="cl-del" onClick={()=>setLines(p=>p.filter(x=>x!==c))}>✕</button></div>
+          ))}
+        </div>
+        <div className="cl-add">
+          <input className="fi" style={{flex:1}} value={inp} onChange={e=>setInp(e.target.value)}
+            onBlur={e=>setInp(toHalf(e.target.value))}
+            placeholder="例: SEES-1 (hESC)" onKeyDown={e=>e.key==="Enter"&&add()}/>
+          <button className="btn btn-p btn-sm" onClick={add}>追加</button>
+        </div>
+        <p className="hint">Enterキーでも追加できます</p>
+        <div className="fac">
+          <button className="btn btn-g" onClick={onClose}>キャンセル</button>
+          <button className="btn btn-p" onClick={()=>{onChange(lines);onClose();}}>保存</button>
+        </div>
+      </div>
+    </div>
+  );
+}
+
+/* ════════ SidebarSection（折りたたみ対応） ════════ */
+function SbSection({title,children,defaultOpen=true}) {
+  const [open,setOpen]=useState(defaultOpen);
+  return(
+    <div className="sb-sec">
+      <div className="sb-sec-hd" onClick={()=>setOpen(p=>!p)}>
+        <span className="sb-lbl">{title}</span>
+        <button className="sb-sec-toggle">{open?"▲":"▼"}</button>
+      </div>
+      {open&&children}
+    </div>
+  );
+}
+
+/* ════════ App ════════ */
+function App() {
+  const [user,     setUser]    =useState(null);   // Firebase user
+  const [fbLoaded, setFbLoaded]=useState(false);  // Firebase data loaded?
+  const [syncing,  setSyncing] =useState(false);
+  const [groups,   setGroups]  =useState([]);
+  const [archived, setArchived]=useState([]);
+  const [cells,    setCells]   =useState(DEF_CELLS);
+  const [medias,   setMedias]  =useState(DEF_MEDIAS);
+  const [co2s,     setCo2s]    =useState(DEF_CO2S);
+  const [temps,    setTemps]   =useState(DEF_TEMPS);
+  const [dishes,   setDishes]  =useState(DEF_DISHES);
+  const [protos,   setProtos]  =useState(DEF_PROTOS);
+  const [sbCollapsed,setSbCol] =useState(false);
+  const [showNew,  setShowNew] =useState(false);
+  const [showCLM,  setShowCLM] =useState(false);
+  const [filterCell,  setFC]   =useState("ALL");
+  const [filterProto, setFP]   =useState("ALL");
+  const [filterStatus,setFS]   =useState("ALL");
+  const [filterMedia, setFM]   =useState("ALL");
+  const [filterDish,  setFD]   =useState("ALL");
+  const [sortKey,     setSK]   =useState("startDate"); // "startDate"|"lastObs"|"passage"
+  const [sortDir,     setSD]   =useState("desc");      // "asc"|"desc"
+  const [showArchived,setSA]   =useState(false);
+  const [dismissed,setDismissed]=useState(new Set());
+  const todayStr=today();
+
+  // ── 認証状態の監視 ──
+  useEffect(()=>{
+    const unsub=fbAuth.onAuthStateChanged(u=>{
+      setUser(u);
+      if(!u){ setFbLoaded(false); return; }
+      // Firebase からデータを読み込む
+      fbRef(u.uid,"data").once("value").then(snap=>{
+        const d=snap.val();
+        if(d){
+          if(d.groups)   setGroups(objToArr(d.groups));
+          if(d.archived) setArchived(objToArr(d.archived));
+          if(d.cells)    setCells(d.cells);
+          if(d.medias)   setMedias(d.medias);
+          if(d.co2s)     setCo2s(d.co2s);
+          if(d.temps)    setTemps(d.temps);
+          if(d.dishes)   setDishes(d.dishes);
+          if(d.protos)   setProtos(d.protos);
+        } else {
+          // 初回: デフォルトデータを保存
+          setGroups(DEF_GROUPS);
+        }
+        setFbLoaded(true);
+      });
+      // リアルタイム同期（他端末の変更を受け取る）
+      fbRef(u.uid,"data").on("value",snap=>{
+        const d=snap.val();
+        if(!d) return;
+        if(d.groups)   setGroups(objToArr(d.groups));
+        if(d.archived) setArchived(objToArr(d.archived));
+        if(d.cells)    setCells(d.cells);
+        if(d.medias)   setMedias(d.medias);
+        if(d.co2s)     setCo2s(d.co2s);
+        if(d.temps)    setTemps(d.temps);
+        if(d.dishes)   setDishes(d.dishes);
+        if(d.protos)   setProtos(d.protos);
+      });
+    });
+    return ()=>{ unsub(); if(user) fbRef(user.uid,"data").off(); };
+  },[]);
+
+  // ── Firebase へ保存するユーティリティ ──
+  const saveToFb=(patch)=>{
+    if(!user) return;
+    setSyncing(true);
+    fbRef(user.uid,"data").update(patch).then(()=>setSyncing(false)).catch(()=>setSyncing(false));
+  };
+
+  // ── 各 state 変更時に Firebase へ同期 ──
+  useEffect(()=>{ if(user&&fbLoaded) saveToFb({groups:groups.reduce((a,g,i)=>({...a,[g.id]:g}),{})}); },[groups]);
+  useEffect(()=>{ if(user&&fbLoaded) saveToFb({archived:archived.reduce((a,g)=>({...a,[g.id]:g}),{})}); },[archived]);
+  useEffect(()=>{ if(user&&fbLoaded) saveToFb({cells,medias,co2s,temps,dishes,protos}); },[cells,medias,co2s,temps,dishes,protos]);
+
+  const opts={cells,medias,co2s,temps,dishes,protos};
+  const setters={cells:setCells,medias:setMedias,co2s:setCo2s,temps:setTemps,dishes:setDishes,protos:setProtos};
+  const onAddOpt=(key,val)=>setters[key]?.(p=>p.includes(val)?p:[...p,val]);
+  const onDelOpt=(key,val)=>setters[key]?.(p=>p.filter(x=>x!==val));
+  const onReplaceOpts=(key,arr)=>setters[key]?.(()=>arr);
+
+  const latestStatus=g=>{const s=[...g.observations].sort((a,b)=>b.date.localeCompare(a.date))[0];return s?s.status:"good";};
+
+  // 共通フィルター＋ソート関数
+  const applyFilters=(list, extraFilter=null, ignoreProtoFilter=false)=>{
+    const r=list.filter(g=>{
+      if(extraFilter&&!extraFilter(g)) return false;
+      if(filterCell!=="ALL"&&g.cellLine!==filterCell) return false;
+      if(!ignoreProtoFilter&&filterProto!=="ALL"&&g.protocol!==filterProto) return false;
+      if(filterStatus!=="ALL"&&latestStatus(g)!==filterStatus) return false;
+      if(filterMedia!=="ALL"&&g.media!==filterMedia) return false;
+      if(filterDish!=="ALL"&&g.dish!==filterDish) return false;
+      return true;
+    });
+    const lastObsDate=g=>[...g.observations].sort((a,b)=>b.date.localeCompare(a.date))[0]?.date||g.startDate;
+    const passageNum=g=>parseInt((g.passage||"").replace(/[^0-9]/g,""),10)||0;
+    r.sort((a,b)=>{
+      let va,vb;
+      if(sortKey==="startDate"){va=a.startDate;vb=b.startDate;}
+      else if(sortKey==="lastObs"){va=lastObsDate(a);vb=lastObsDate(b);}
+      else if(sortKey==="passage"){va=passageNum(a);vb=passageNum(b);return sortDir==="asc"?va-vb:vb-va;}
+      return sortDir==="asc"?va.localeCompare(vb):vb.localeCompare(va);
+    });
+    return r;
+  };
+
+  const filtered         = applyFilters(groups);
+  const nonFreezeFiltered= applyFilters(groups,g=>!isFreezeProto(g.protocol),true);
+  const freezeOnlyFiltered=applyFilters(groups,g=>isFreezeProto(g.protocol),true);
+
+  const [mainView,setMainView]=useState("active"); // "all"|"active"|"freeze"|"archived"
+
+  const allAlerts=useMemo(()=>{
+    const list=[];
+    groups.forEach(g=>{
+      if(g.protocol==="継代"&&addDays(g.startDate.slice(0,10),1)===todayStr)
+        list.push({key:`media-${g.id}`,type:"blue",icon:"💧",msg:<><strong>{g.cellLine} {g.passage||""}</strong> — 継代翌日です。培地交換を忘れずに！</>});
+      const lat=[...g.observations].sort((a,b)=>b.date.localeCompare(a.date))[0];
+      if(lat&&lat.confluence>=60)
+        list.push({key:`pass-${g.id}-${lat.confluence}`,type:"amber",icon:"🔁",msg:<><strong>{g.cellLine} {g.passage||""}</strong> — コンフルエンス <strong>{lat.confluence}%</strong>。継代を検討してください。</>});
+      if(lat&&lat.status==="bad")
+        list.push({key:`bad-${g.id}`,type:"red",icon:"❗",msg:<><strong>{g.cellLine} {g.passage||""}</strong> — 最新観察が「要確認」状態です。</>});
+    });
+    return list;
+  },[groups,todayStr]);
+
+  const visibleAlerts=allAlerts.filter(a=>!dismissed.has(a.key));
+  const dismissAlert=key=>setDismissed(p=>new Set([...p,key]));
+
+  const stats={
+    total:groups.length,
+    active:groups.filter(g=>latestStatus(g)==="good").length,
+    caution:groups.filter(g=>latestStatus(g)==="warn").length,
+    check:groups.filter(g=>latestStatus(g)==="bad").length,
+  };
+
+  const updateGroup=g=>{
+    if(isFreezeProto(g.protocol)){
+      // 凍結プロトコルに変更されたら凍結中タブへ自動移動
+      setGroups(p=>p.filter(x=>x.id!==g.id));
+      setArchived(p=>{
+        const exists=p.some(x=>x.id===g.id);
+        if(exists) return p.map(x=>x.id===g.id?{...g,archiveType:"freeze",archivedAt:x.archivedAt||g.startDate}:x);
+        return [{...g,archivedAt:g.startDate,archiveType:"freeze"},...p];
+      });
+    } else {
+      // 凍結→通常に戻った場合: archivedから groups に戻す
+      const inArchived=archived.some(x=>x.id===g.id&&x.archiveType==="freeze");
+      if(inArchived){
+        setArchived(p=>p.filter(x=>x.id!==g.id));
+        setGroups(p=>[g,...p.filter(x=>x.id!==g.id)]);
+      } else {
+        setGroups(p=>p.map(x=>x.id===g.id?g:x));
+      }
+    }
+  };
+  const deleteGroup=id=>setGroups(p=>p.filter(x=>x.id!==id));
+  const deleteArchived=id=>setArchived(p=>p.filter(x=>x.id!==id));
+  const addGroup=g=>{
+    if(g.cellLine&&!cells.includes(g.cellLine)) setCells(p=>[...p,g.cellLine]);
+    if(isFreezeProto(g.protocol)){
+      // 凍結プロトコルは自動的に凍結中タブへ
+      setArchived(p=>[{...g,archivedAt:g.startDate,archiveType:"freeze"},...p]);
+    } else {
+      setGroups(p=>[g,...p]);
+    }
+  };
+  const archiveGroup=(id,proto)=>{
+    const g=groups.find(x=>x.id===id);
+    if(!g) return;
+    const archiveType=isFreezeProto(proto||g.protocol)?"freeze":"passage";
+    setArchived(p=>[{...g,archivedAt:nowDT(),archiveType},...p]);
+    setGroups(p=>p.filter(x=>x.id!==id));
+  };
+  const deleteCellLine=name=>{
+    setCells(p=>p.filter(c=>c!==name));
+    setGroups(p=>p.filter(g=>g.cellLine!==name));
+    if(filterCell===name) setFC("ALL");
+  };
+
+  const allCellNames=[...new Set([...cells,...groups.map(g=>g.cellLine)])];
+  const usedProtos=[...new Set(groups.map(g=>g.protocol))];
+  const usedMedias=[...new Set(groups.map(g=>g.media).filter(Boolean))];
+  const usedDishes=[...new Set(groups.map(g=>g.dish).filter(Boolean))];
+  const usedProtosNF=usedProtos.filter(p=>!FREEZE_PROTOS.includes(p));
+
+  // 培養中グループ = groups の中で凍結系以外
+  // 凍結中グループ = archived の中で archiveType==="freeze"
+  // 継代済み = archived の中で archiveType==="passage"
+
+  // 培養中: 細胞株・プロトコル・ステータス・培地・培養器フィルター全て有効
+  // ただし凍結系プロトコルは除外（extraFilter）
+  // ignoreProtoFilter=false → filterProto も効く（培養中ビューでプロトコル絞り可）
+  const activeFiltered = applyFilters(groups, g=>!isFreezeProto(g.protocol), false);
+
+  // 凍結中: archived から archiveType==="freeze" のもの（フィルター適用）
+  const freezeArchived = archived.filter(g=>g.archiveType==="freeze");
+  const freezingFiltered = freezeArchived
+    .filter(g=>(filterCell==="ALL"||g.cellLine===filterCell))
+    .filter(g=>(filterStatus==="ALL"||latestStatus(g)===filterStatus))
+    .sort((a,b)=>b.startDate.localeCompare(a.startDate));
+
+  // 継代済み: archived から archiveType==="passage" のもの
+  const passageArchived = archived.filter(g=>g.archiveType!=="freeze");
+  const archivedSorted = passageArchived
+    .filter(g=>(filterCell==="ALL"||g.cellLine===filterCell))
+    .sort((a,b)=>b.archivedAt.localeCompare(a.archivedAt));
+
+  // すべて = groups（培養中） + archived（凍結中＋継代済み）をフィルター適用
+  const allFiltered = [
+    ...applyFilters(groups, null, false),
+    ...archived
+      .filter(g=>(filterCell==="ALL"||g.cellLine===filterCell))
+      .sort((a,b)=>b.startDate.localeCompare(a.startDate)),
+  ];
+
+  const currentFiltered = mainView==="archived" ? archivedSorted
+    : mainView==="freeze"   ? freezingFiltered
+    : mainView==="all"      ? allFiltered
+    : activeFiltered;
+
+  return(
+    <div className={"shell"+(sbCollapsed?" collapsed":"")}>
+      {/* topbar */}
+      <header className="tb">
+        <button className="tb-toggle" onClick={()=>setSbCol(p=>!p)}>{sbCollapsed?"›":"‹"}</button>
+        <div className="tb-logo">CellNote<span>.lab</span></div>
+        <div className="tb-sp"/>
+        {visibleAlerts.length>0&&(
+          <span style={{fontFamily:"var(--fm)",fontSize:11,background:"var(--amber-bg)",color:"var(--amber)",border:"1px solid var(--amber-bd)",borderRadius:20,padding:"3px 10px"}}>
+            🔔 {visibleAlerts.length}件
+          </span>
+        )}
+        <span className="tb-chip">iPS / ES</span>
+        <span style={{fontFamily:"var(--fm)",fontSize:10,color:"var(--ink3)",display:"flex",alignItems:"center",gap:4}}>
+          <span className={"sync-dot "+(syncing?"sync-ing":"sync-ok")}/>
+          {syncing?"同期中":"同期済"}
+        </span>
+        <button onClick={()=>fbAuth.signOut()} style={{background:"none",border:"1px solid var(--border)",borderRadius:"var(--rs)",padding:"4px 10px",fontSize:11,cursor:"pointer",color:"var(--ink3)",fontFamily:"var(--fb)"}}>ログアウト</button>
+      </header>
+
+      {/* sidebar */}
+      <nav className="sb">
+        <div className="sb-inner">
+          {/* 表示切替 */}
+          <SbSection title="表示">
+            <button className={"sb-btn"+(mainView==="all"?" act":"")} onClick={()=>setMainView("all")}>
+              <span className="sb-dot" style={{background:"var(--ink3)"}}/>すべて
+              <span className="sb-cnt">{sumPlate([...groups,...archived])||0}</span>
+            </button>
+            <button className={"sb-btn"+(mainView==="active"?" act":"")} onClick={()=>setMainView("active")}>
+              <span className="sb-dot" style={{background:"var(--green)"}}/>培養中
+              <span className="sb-cnt">{sumPlate(groups)||0}</span>
+            </button>
+            <button className={"sb-btn"+(mainView==="freeze"?" act":"")} onClick={()=>setMainView("freeze")}>
+              <span className="sb-dot" style={{background:"var(--blue)"}}/>凍結中
+              <span className="sb-cnt">{sumPlate(archived.filter(g=>g.archiveType==="freeze"))||0}</span>
+            </button>
+            <button className={"sb-btn"+(mainView==="archived"?" act":"")} onClick={()=>setMainView("archived")}>
+              <span className="sb-dot" style={{background:"var(--amber)"}}/>継代済み
+              <span className="sb-cnt">{sumPlate(archived.filter(g=>g.archiveType!=="freeze"))||0}</span>
+            </button>
+          </SbSection>
+
+          <div className="sb-divider"/>
+
+          {/* 細胞株フィルター */}
+          <SbSection title="細胞株">
+            <button className={"sb-btn"+(filterCell==="ALL"?" act":"")} onClick={()=>setFC("ALL")}>
+              <span className="sb-dot" style={{background:"var(--ink3)"}}/>すべて
+            </button>
+            {allCellNames.map(c=>(
+              <CellLineRow key={c} name={c} active={filterCell===c}
+                count={sumPlate([...groups,...archived].filter(g=>g.cellLine===c))||0}
+                onSelect={()=>setFC(c)} onDelete={()=>deleteCellLine(c)}/>
+            ))}
+            <button className="sb-btn" style={{color:"var(--green)",fontSize:11.5}} onClick={()=>setShowCLM(true)}>＋ 細胞株を管理</button>
+          </SbSection>
+
+          {/* プロトコルフィルター（count>0のみ）*/}
+          <SbSection title="プロトコル">
+            <button className={"sb-btn"+(filterProto==="ALL"?" act":"")} onClick={()=>setFP("ALL")}>
+              <span>すべて</span>
+            </button>
+            {usedProtos.map(p=>{
+              const cnt=groups.filter(g=>g.protocol===p).length;
+              const col=getProtoColor(p,protos);
+              return(
+                <button key={p} className={"sb-btn"+(filterProto===p?" act":"")} onClick={()=>setFP(p)}>
+                  <span className="sb-dot" style={{background:col.color}}/>
+                  <span>{p}</span>
+                  <span className="sb-cnt">{cnt}</span>
+                </button>
+              );
+            })}
+          </SbSection>
+
+          {/* 状態フィルター */}
+          <SbSection title="状態">
+            <button className={"sb-btn"+(filterStatus==="ALL"?" act":"")} onClick={()=>setFS("ALL")}>
+              <span className="sb-dot" style={{background:"var(--ink3)"}}/>すべて
+            </button>
+            {[{key:"good",label:"正常",color:"var(--green)",val:stats.active},
+              {key:"warn",label:"注意",color:"var(--amber)",val:stats.caution},
+              {key:"bad", label:"要確認",color:"var(--red)",  val:stats.check}].map(x=>(
+              <button key={x.key} className={"sb-btn"+(filterStatus===x.key?" act":"")} onClick={()=>setFS(filterStatus===x.key?"ALL":x.key)}>
+                <span style={{display:"flex",alignItems:"center",gap:6}}>
+                  <span className="sb-dot" style={{background:x.color}}/>{x.label}
+                </span>
+                <span className="sb-cnt" style={{color:x.color,fontWeight:600}}>{x.val}</span>
+              </button>
+            ))}
+          </SbSection>
+        </div>
+      </nav>
+
+      {/* main */}
+      <main className="main">
+        <div className="ph">
+          <div>
+            <div className="ph-title">{mainView==="archived"?"継代済み":mainView==="freeze"?"凍結中":mainView==="all"?"すべて":"培養中"}</div>
+            <div style={{fontFamily:"var(--fm)",fontSize:10,color:"var(--ink3)",marginTop:3}}>{new Date().toLocaleDateString("ja-JP")}</div>
+          </div>
+          <button className="btn btn-p" onClick={()=>setShowNew(true)}>＋ 新規</button>
+        </div>
+
+        {visibleAlerts.length>0&&(
+          <div className="al-list">
+            {visibleAlerts.map(a=>(
+              <div key={a.key} className={"al al-"+a.type}>
+                <span className="al-icon">{a.icon}</span>
+                <span className="al-body">{a.msg}</span>
+                <button className="al-close" onClick={()=>dismissAlert(a.key)}>✕</button>
+              </div>
+            ))}
+          </div>
+        )}
+
+        {/* ── sort / filter bar ── */}
+        {(mainView==="active"||mainView==="all"||mainView==="freeze")&&(
+          <div className="ctrl-bar">
+            {/* ソートキー */}
+            <div className="ctrl-group">
+              <span className="ctrl-lbl">並び替え</span>
+              <select className="ctrl-sel" value={sortKey} onChange={e=>setSK(e.target.value)}>
+                <option value="startDate">開始日時</option>
+                <option value="lastObs">最終記録</option>
+                <option value="passage">継代数</option>
+              </select>
+            </div>
+            {/* 昇順/降順 */}
+            <div className="ctrl-dir">
+              <button className={sortDir==="asc"?"act":""} onClick={()=>setSD("asc")}>↑ 昇順</button>
+              <button className={sortDir==="desc"?"act":""} onClick={()=>setSD("desc")}>↓ 降順</button>
+            </div>
+            <div className="ctrl-sep"/>
+            {/* 絞り込み: 細胞株 */}
+            <div className="ctrl-group">
+              <span className="ctrl-lbl">細胞株</span>
+              <select className="ctrl-sel" value={filterCell} onChange={e=>setFC(e.target.value)}>
+                <option value="ALL">すべて</option>
+                {allCellNames.map(v=><option key={v} value={v}>{v}</option>)}
+              </select>
+            </div>
+            {/* 絞り込み: プロトコル */}
+            <div className="ctrl-group">
+              <span className="ctrl-lbl">プロトコル</span>
+              <select className="ctrl-sel" value={filterProto} onChange={e=>setFP(e.target.value)}>
+                <option value="ALL">すべて</option>
+                {usedProtos.map(v=><option key={v} value={v}>{v}</option>)}
+              </select>
+            </div>
+            {/* 絞り込み: 培地 */}
+            <div className="ctrl-group">
+              <span className="ctrl-lbl">培地</span>
+              <select className="ctrl-sel" value={filterMedia} onChange={e=>setFM(e.target.value)}>
+                <option value="ALL">すべて</option>
+                {usedMedias.map(v=><option key={v} value={v}>{v}</option>)}
+              </select>
+            </div>
+            {/* 絞り込み: 培養器 */}
+            <div className="ctrl-group">
+              <span className="ctrl-lbl">培養器</span>
+              <select className="ctrl-sel" value={filterDish} onChange={e=>setFD(e.target.value)}>
+                <option value="ALL">すべて</option>
+                {usedDishes.map(v=><option key={v} value={v}>{v}</option>)}
+              </select>
+            </div>
+            {/* リセット */}
+            {(filterCell!=="ALL"||filterProto!=="ALL"||filterStatus!=="ALL"||filterMedia!=="ALL"||filterDish!=="ALL")&&(
+              <button className="btn btn-g btn-xs" onClick={()=>{setFC("ALL");setFP("ALL");setFS("ALL");setFM("ALL");setFD("ALL");}}>✕ リセット</button>
+            )}
+          </div>
+        )}
+
+        {(mainView==="active"||mainView==="all")&&(
+          <div className="stats">
+            <div className="sc b"><div className="sc-lbl">グループ数</div><div className="sc-val">{currentFiltered.length}</div></div>
+            <div className="sc g"><div className="sc-lbl">正常</div><div className="sc-val">{currentFiltered.filter(g=>latestStatus(g)==="good").length}</div></div>
+            <div className="sc a"><div className="sc-lbl">注意</div><div className="sc-val">{currentFiltered.filter(g=>latestStatus(g)==="warn").length}</div></div>
+            <div className="sc r"><div className="sc-lbl">要確認</div><div className="sc-val">{currentFiltered.filter(g=>latestStatus(g)==="bad").length}</div></div>
+          </div>
+        )}
+
+        <div className="ca">
+          <div className="sec-hd">
+            <span className="sec-t">{currentFiltered.length} グループ</span>
+          </div>
+          {currentFiltered.length===0
+            ?<div className="empty"><div className="empty-icon">{mainView==="archived"?"📦":mainView==="freeze"?"❄️":"🔬"}</div><div className="empty-t">{mainView==="archived"?"継代済みの記録はありません":mainView==="freeze"?"凍結中のグループはありません":"グループがありません"}</div></div>
+            :currentFiltered.map(g=>(
+                <PassageGroup key={g.id} group={g} todayStr={todayStr}
+                  opts={opts} onAddOpt={onAddOpt} onDelOpt={onDelOpt} onReplaceOpts={onReplaceOpts}
+                  onUpdate={g=>{ if(mainView==="archived"||mainView==="freeze"||(mainView==="all"&&g.archiveType!=null)) setArchived(p=>p.map(x=>x.id===g.id?{...g,archivedAt:x.archivedAt,archiveType:x.archiveType}:x)); else updateGroup(g); }}
+                  onDelete={(mainView==="archived"||mainView==="freeze"||(mainView==="all"&&g.archiveType!=null))?deleteArchived:deleteGroup}
+                  onArchive={archiveGroup}
+                  isArchived={mainView==="archived"||(mainView==="freeze")||(mainView==="all"&&g.archiveType!=null)}/>
+              ))
+          }
+        </div>
+      </main>
+
+      {showNew&&<NewGroupModal onClose={()=>setShowNew(false)} onSave={addGroup} opts={opts} onAddOpt={onAddOpt} onDelOpt={onDelOpt} onReplaceOpts={onReplaceOpts}/>}
+      {showCLM&&<CellLineModal cells={cells} onClose={()=>setShowCLM(false)} onChange={setCells}/>}
+    </div>
+  );
+}
+
+function Root() {
+  const [authReady,setAuthReady]=useState(false);
+  const [loggedIn, setLoggedIn] =useState(false);
+  useEffect(()=>{
+    fbAuth.onAuthStateChanged(u=>{setLoggedIn(!!u);setAuthReady(true);});
+  },[]);
+  if(!authReady) return(
+    <div style={{display:"flex",alignItems:"center",justifyContent:"center",height:"100vh",fontFamily:"var(--fm)",color:"var(--ink3)"}}>
+      読み込み中...
+    </div>
+  );
+  if(!loggedIn) return <LoginScreen/>;
+  return <App/>;
+}
+ReactDOM.createRoot(document.getElementById('root')).render(<Root/>);
+</script>
+</body>
+</html>
