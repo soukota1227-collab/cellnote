@@ -421,7 +421,7 @@ const diffLabel=(start,obs)=>{
 };
 const uid=()=>Math.random().toString(36).slice(2,9);
 // plateCount の合計（数値部分のみ抽出して加算）
-const sumPlate=list=>list.reduce((acc,g)=>{
+const sumPlate=list=>(list||[]).reduce((acc,g)=>{
   const n=parseFloat((g.plateCount||"").replace(/[^0-9.]/g,""));
   return acc+(isNaN(n)?0:n);
 },0);
@@ -1153,11 +1153,11 @@ function App() {
   const onDelOpt=(key,val)=>setters[key]?.(p=>p.filter(x=>x!==val));
   const onReplaceOpts=(key,arr)=>setters[key]?.(()=>arr);
 
-  const latestStatus=g=>{const s=[...g.observations].sort((a,b)=>b.date.localeCompare(a.date))[0];return s?s.status:"good";};
+  const latestStatus=g=>{const s=[...(g.observations||[])].sort((a,b)=>b.date.localeCompare(a.date))[0];return s?s.status:"good";};
 
   // 共通フィルター＋ソート関数
   const applyFilters=(list, extraFilter=null, ignoreProtoFilter=false)=>{
-    const r=list.filter(g=>{
+    const r=(list||[]).filter(g=>{
       if(extraFilter&&!extraFilter(g)) return false;
       if(filterCell!=="ALL"&&g.cellLine!==filterCell) return false;
       if(!ignoreProtoFilter&&filterProto!=="ALL"&&g.protocol!==filterProto) return false;
@@ -1189,7 +1189,7 @@ function App() {
     groups.forEach(g=>{
       if(g.protocol==="継代"&&addDays(g.startDate.slice(0,10),1)===todayStr)
         list.push({key:`media-${g.id}`,type:"blue",icon:"💧",msg:<><strong>{g.cellLine} {g.passage||""}</strong> — 継代翌日です。培地交換を忘れずに！</>});
-      const lat=[...g.observations].sort((a,b)=>b.date.localeCompare(a.date))[0];
+      const lat=[...(g.observations||[])].sort((a,b)=>b.date.localeCompare(a.date))[0];
       if(lat&&lat.confluence>=60)
         list.push({key:`pass-${g.id}-${lat.confluence}`,type:"amber",icon:"🔁",msg:<><strong>{g.cellLine} {g.passage||""}</strong> — コンフルエンス <strong>{lat.confluence}%</strong>。継代を検討してください。</>});
       if(lat&&lat.status==="bad")
@@ -1268,22 +1268,22 @@ function App() {
   const activeFiltered = applyFilters(groups, g=>!isFreezeProto(g.protocol), false);
 
   // 凍結中: archived から archiveType==="freeze" のもの（フィルター適用）
-  const freezeArchived = archived.filter(g=>g.archiveType==="freeze");
+  const freezeArchived = (archived||[]).filter(g=>g.archiveType==="freeze");
   const freezingFiltered = freezeArchived
     .filter(g=>(filterCell==="ALL"||g.cellLine===filterCell))
     .filter(g=>(filterStatus==="ALL"||latestStatus(g)===filterStatus))
     .sort((a,b)=>b.startDate.localeCompare(a.startDate));
 
   // 継代済み: archived から archiveType==="passage" のもの
-  const passageArchived = archived.filter(g=>g.archiveType!=="freeze");
+  const passageArchived = (archived||[]).filter(g=>g.archiveType!=="freeze");
   const archivedSorted = passageArchived
     .filter(g=>(filterCell==="ALL"||g.cellLine===filterCell))
     .sort((a,b)=>b.archivedAt.localeCompare(a.archivedAt));
 
   // すべて = groups（培養中） + archived（凍結中＋継代済み）をフィルター適用
   const allFiltered = [
-    ...applyFilters(groups, null, false),
-    ...archived
+    ...applyFilters(groups||[], null, false),
+    ...(archived||[])
       .filter(g=>(filterCell==="ALL"||g.cellLine===filterCell))
       .sort((a,b)=>b.startDate.localeCompare(a.startDate)),
   ];
@@ -1320,7 +1320,7 @@ function App() {
           <SbSection title="表示">
             <button className={"sb-btn"+(mainView==="all"?" act":"")} onClick={()=>setMainView("all")}>
               <span className="sb-dot" style={{background:"var(--ink3)"}}/>すべて
-              <span className="sb-cnt">{sumPlate([...groups,...archived])||0}</span>
+              <span className="sb-cnt">{sumPlate([...(groups||[]),...(archived||[])])||0}</span>
             </button>
             <button className={"sb-btn"+(mainView==="active"?" act":"")} onClick={()=>setMainView("active")}>
               <span className="sb-dot" style={{background:"var(--green)"}}/>培養中
@@ -1328,11 +1328,11 @@ function App() {
             </button>
             <button className={"sb-btn"+(mainView==="freeze"?" act":"")} onClick={()=>setMainView("freeze")}>
               <span className="sb-dot" style={{background:"var(--blue)"}}/>凍結中
-              <span className="sb-cnt">{sumPlate(archived.filter(g=>g.archiveType==="freeze"))||0}</span>
+              <span className="sb-cnt">{sumPlate((archived||[]).filter(g=>g.archiveType==="freeze"))||0}</span>
             </button>
             <button className={"sb-btn"+(mainView==="archived"?" act":"")} onClick={()=>setMainView("archived")}>
               <span className="sb-dot" style={{background:"var(--amber)"}}/>継代済み
-              <span className="sb-cnt">{sumPlate(archived.filter(g=>g.archiveType!=="freeze"))||0}</span>
+              <span className="sb-cnt">{sumPlate((archived||[]).filter(g=>g.archiveType!=="freeze"))||0}</span>
             </button>
           </SbSection>
 
@@ -1345,7 +1345,7 @@ function App() {
             </button>
             {allCellNames.map(c=>(
               <CellLineRow key={c} name={c} active={filterCell===c}
-                count={sumPlate([...groups,...archived].filter(g=>g.cellLine===c))||0}
+                count={sumPlate([...(groups||[]),...(archived||[])].filter(g=>g.cellLine===c))||0}
                 onSelect={()=>setFC(c)} onDelete={()=>deleteCellLine(c)}/>
             ))}
             <button className="sb-btn" style={{color:"var(--green)",fontSize:11.5}} onClick={()=>setShowCLM(true)}>＋ 細胞株を管理</button>
